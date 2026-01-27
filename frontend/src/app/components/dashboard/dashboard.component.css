@@ -1,0 +1,33 @@
+.spacer {
+  flex: 1 1 auto;
+}
+
+.sidenav-container {
+  height: calc(100vh - 64px);
+}
+
+.sidenav {
+  width: 250px;
+}
+
+mat-nav-list {
+  padding-top: 16px;
+}
+
+mat-nav-list a {
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+}
+
+mat-nav-list mat-icon {
+  margin-right: 12px;
+}
+
+.active-link {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.main-content {
+  padding: 24px;
+}

@@ -1,0 +1,48 @@
+<div class="container">
+  <h2>Candidates</h2>
+  
+  <div class="search-bar">
+    <mat-form-field appearance="outline">
+      <mat-label>Search candidates</mat-label>
+      <input matInput [(ngModel)]="searchTerm" (keyup.enter)="search()">
+    </mat-form-field>
+    <button mat-raised-button color="primary" (click)="search()">
+      <mat-icon>search</mat-icon>
+      Search
+    </button>
+  </div>
+
+  <table mat-table [dataSource]="candidates" class="mat-elevation-z8">
+    <ng-container matColumnDef="firstName">
+      <th mat-header-cell *matHeaderCellDef>First Name</th>
+      <td mat-cell *matCellDef="let candidate">{{ candidate.firstName }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="lastName">
+      <th mat-header-cell *matHeaderCellDef>Last Name</th>
+      <td mat-cell *matCellDef="let candidate">{{ candidate.lastName }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="applicationCount">
+      <th mat-header-cell *matHeaderCellDef>Applications</th>
+      <td mat-cell *matCellDef="let candidate">{{ candidate.applicationCount || 0 }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="reviewCount">
+      <th mat-header-cell *matHeaderCellDef>Reviews</th>
+      <td mat-cell *matCellDef="let candidate">{{ candidate.reviewCount || 0 }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef>Actions</th>
+      <td mat-cell *matCellDef="let candidate">
+        <button mat-icon-button color="warn" (click)="deleteCandidate(candidate.id!)">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+  </table>
+</div>

@@ -1,0 +1,43 @@
+# IDE et fichiers de configuration
+.vscode/
+*.code-workspace
+
+# Système d'exploitation
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Node.js (si applicable pour frontend ou backend)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build / Distribution (si applicable)
+dist/
+build/
+out/
+
+# Environnement / Configs locales
+.env
+.env.local
+.env.*.local
+
+# Fichiers temporaires
+*.tmp
+*.swp
+*.bak
+
+# Macros / fichiers générés
+*.class
+*.pyc
+*.pyo
+__pycache__/
+
+# CSV ou données temporaires (si tu veux ignorer)
+sample-import.csv
+
+# Scripts exécutables (si tu ne veux pas les suivre)
+start.sh

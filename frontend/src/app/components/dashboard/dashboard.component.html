@@ -1,0 +1,36 @@
+<mat-toolbar color="primary">
+  <span>CVScreen</span>
+  <span class="spacer"></span>
+  <span>{{ currentUser?.username }}</span>
+  <button mat-button (click)="logout()">
+    <mat-icon>exit_to_app</mat-icon>
+    Logout
+  </button>
+</mat-toolbar>
+
+<mat-sidenav-container class="sidenav-container">
+  <mat-sidenav mode="side" opened class="sidenav">
+    <mat-nav-list>
+      <a mat-list-item routerLink="/dashboard/candidates" routerLinkActive="active-link">
+        <mat-icon>person</mat-icon>
+        <span>Candidates</span>
+      </a>
+      <a mat-list-item routerLink="/dashboard/jobs" routerLinkActive="active-link">
+        <mat-icon>work</mat-icon>
+        <span>Jobs</span>
+      </a>
+      <a mat-list-item routerLink="/dashboard/applications" routerLinkActive="active-link">
+        <mat-icon>assignment</mat-icon>
+        <span>Applications</span>
+      </a>
+      <a mat-list-item routerLink="/dashboard/companies" routerLinkActive="active-link">
+        <mat-icon>business</mat-icon>
+        <span>Companies</span>
+      </a>
+    </mat-nav-list>
+  </mat-sidenav>
+
+  <mat-sidenav-content class="main-content">
+    <router-outlet></router-outlet>
+  </mat-sidenav-content>
+</mat-sidenav-container>
