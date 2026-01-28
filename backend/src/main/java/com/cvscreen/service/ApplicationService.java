@@ -12,7 +12,9 @@ import com.cvscreen.repository.CandidateRepository;
 import com.cvscreen.repository.CandidateReviewRepository;
 import com.cvscreen.repository.CompanyRepository;
 import com.cvscreen.repository.JobRepository;
+import com.cvscreen.specification.ApplicationSpecification;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
@@ -55,20 +57,17 @@ public class ApplicationService {
     @Transactional(readOnly = true)
     public List<ApplicationDTO> searchApplications(String candidateName, String jobReference, 
                                                    String companyName, String roleCategory, String status) {
-        // Convert empty strings to null to avoid type casting issues with PostgreSQL
-        String cleanCandidateName = (candidateName != null && !candidateName.trim().isEmpty()) ? candidateName : null;
-        String cleanJobReference = (jobReference != null && !jobReference.trim().isEmpty()) ? jobReference : null;
-        String cleanCompanyName = (companyName != null && !companyName.trim().isEmpty()) ? companyName : null;
-        String cleanRoleCategory = (roleCategory != null && !roleCategory.trim().isEmpty()) ? roleCategory : null;
-        String cleanStatus = (status != null && !status.trim().isEmpty()) ? status : null;
+        // Use JPA Specification to build the query dynamically
+        // This avoids PostgreSQL type inference issues with prepared statements
+        Specification<Application> spec = ApplicationSpecification.searchApplications(
+            candidateName, 
+            jobReference, 
+            companyName, 
+            roleCategory, 
+            status
+        );
         
-        return applicationRepository.searchApplications(
-                cleanCandidateName, 
-                cleanJobReference, 
-                cleanCompanyName, 
-                cleanRoleCategory, 
-                cleanStatus
-            ).stream()
+        return applicationRepository.findAll(spec).stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());
     }

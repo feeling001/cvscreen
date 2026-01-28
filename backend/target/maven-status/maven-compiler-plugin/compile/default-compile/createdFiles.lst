@@ -1,9 +1,0 @@
-com\cvscreen\entity\Application.class
-com\cvscreen\entity\Job.class
-com\cvscreen\dto\CreateJobRequest.class
-com\cvscreen\entity\User.class
-com\cvscreen\entity\Company.class
-com\cvscreen\entity\Application$ApplicationStatus.class
-com\cvscreen\entity\CandidateReview.class
-com\cvscreen\entity\Candidate.class
-com\cvscreen\entity\Job$JobStatus.class
