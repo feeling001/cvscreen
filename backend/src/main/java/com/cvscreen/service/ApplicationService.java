@@ -55,14 +55,19 @@ public class ApplicationService {
     @Transactional(readOnly = true)
     public List<ApplicationDTO> searchApplications(String candidateName, String jobReference, 
                                                    String companyName, String roleCategory, String status) {
-        // Pass the status as String directly to the repository
-        // The repository will handle the comparison
+        // Convert empty strings to null to avoid type casting issues with PostgreSQL
+        String cleanCandidateName = (candidateName != null && !candidateName.trim().isEmpty()) ? candidateName : null;
+        String cleanJobReference = (jobReference != null && !jobReference.trim().isEmpty()) ? jobReference : null;
+        String cleanCompanyName = (companyName != null && !companyName.trim().isEmpty()) ? companyName : null;
+        String cleanRoleCategory = (roleCategory != null && !roleCategory.trim().isEmpty()) ? roleCategory : null;
+        String cleanStatus = (status != null && !status.trim().isEmpty()) ? status : null;
+        
         return applicationRepository.searchApplications(
-                candidateName, 
-                jobReference, 
-                companyName, 
-                roleCategory, 
-                status  // Changed: pass String directly instead of enum
+                cleanCandidateName, 
+                cleanJobReference, 
+                cleanCompanyName, 
+                cleanRoleCategory, 
+                cleanStatus
             ).stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());

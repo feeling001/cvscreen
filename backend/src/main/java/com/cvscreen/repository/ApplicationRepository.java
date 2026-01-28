@@ -26,10 +26,10 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
            "LEFT JOIN FETCH a.job j " +
            "LEFT JOIN FETCH a.company co " +
            "WHERE (:candidateName IS NULL OR LOWER(CONCAT(c.firstName, ' ', c.lastName)) LIKE LOWER(CONCAT('%', :candidateName, '%'))) " +
-           "AND (:jobReference IS NULL OR :jobReference = '' OR LOWER(j.reference) LIKE LOWER(CONCAT('%', :jobReference, '%'))) " +
-           "AND (:companyName IS NULL OR :companyName = '' OR LOWER(co.name) LIKE LOWER(CONCAT('%', :companyName, '%'))) " +
-           "AND (:roleCategory IS NULL OR :roleCategory = '' OR LOWER(a.roleCategory) LIKE LOWER(CONCAT('%', :roleCategory, '%'))) " +
-           "AND (:statusStr IS NULL OR :statusStr = '' OR CAST(a.status AS string) = :statusStr)")
+           "AND (:jobReference IS NULL OR LOWER(j.reference) LIKE LOWER(CONCAT('%', :jobReference, '%'))) " +
+           "AND (:companyName IS NULL OR LOWER(co.name) LIKE LOWER(CONCAT('%', :companyName, '%'))) " +
+           "AND (:roleCategory IS NULL OR LOWER(a.roleCategory) LIKE LOWER(CONCAT('%', :roleCategory, '%'))) " +
+           "AND (:statusStr IS NULL OR CAST(a.status AS string) = :statusStr)")
     List<Application> searchApplications(
         @Param("candidateName") String candidateName,
         @Param("jobReference") String jobReference,
