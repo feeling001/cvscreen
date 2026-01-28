@@ -55,17 +55,15 @@ public class ApplicationService {
     @Transactional(readOnly = true)
     public List<ApplicationDTO> searchApplications(String candidateName, String jobReference, 
                                                    String companyName, String roleCategory, String status) {
-        Application.ApplicationStatus statusEnum = null;
-        if (status != null && !status.isEmpty()) {
-            try {
-                statusEnum = Application.ApplicationStatus.valueOf(status);
-            } catch (IllegalArgumentException e) {
-                // Invalid status, ignore
-            }
-        }
-        
-        return applicationRepository.searchApplications(candidateName, jobReference, companyName, 
-                                                       roleCategory, statusEnum).stream()
+        // Pass the status as String directly to the repository
+        // The repository will handle the comparison
+        return applicationRepository.searchApplications(
+                candidateName, 
+                jobReference, 
+                companyName, 
+                roleCategory, 
+                status  // Changed: pass String directly instead of enum
+            ).stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());
     }
