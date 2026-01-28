@@ -50,9 +50,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
+        // CORRECTION: Retiré /api/auth/ car context-path ajoute déjà /api
         // Skip JWT filter for auth endpoints
         return path.startsWith("/api/auth/") || 
-               path.equals("/error") ||
+               path.equals("/api/error") ||
                "OPTIONS".equals(request.getMethod());
     }
 

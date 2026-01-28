@@ -14,7 +14,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/auth")  // Changed to /api/auth to match SecurityConfig
+@RequestMapping("/auth")  // CORRECTION: Retiré /api car context-path ajoute déjà /api
 @RequiredArgsConstructor
 @CrossOrigin(origins = {"http://127.0.0.1:8082", "http://localhost:8082"})
 public class AuthController {
