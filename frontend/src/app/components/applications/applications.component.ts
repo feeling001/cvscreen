@@ -7,8 +7,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { ApplicationService } from '../../services/application.service';
 import { Application } from '../../models/application.model';
+import { ApplicationDialogComponent } from '../application-dialog/application-dialog.component';
 
 @Component({
   selector: 'app-applications',
@@ -21,11 +23,18 @@ import { Application } from '../../models/application.model';
     MatFormFieldModule,
     MatInputModule,
     MatIconModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatDialogModule
   ],
   template: `
     <div class="container">
-      <h2>Applications</h2>
+      <div class="header">
+        <h2>Applications</h2>
+        <button mat-raised-button color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          New Application
+        </button>
+      </div>
       
       <div class="search-bar">
         <mat-form-field appearance="outline">
@@ -89,7 +98,12 @@ import { Application } from '../../models/application.model';
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
           <td mat-cell *matCellDef="let app">
-            <button mat-icon-button color="warn" (click)="deleteApplication(app.id!)">
+            <button mat-icon-button color="primary" (click)="openEditDialog(app)"
+                    matTooltip="Edit">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="deleteApplication(app.id!)"
+                    matTooltip="Delete">
               <mat-icon>delete</mat-icon>
             </button>
           </td>
@@ -103,6 +117,17 @@ import { Application } from '../../models/application.model';
   styles: [`
     .container {
       padding: 20px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .header h2 {
+      margin: 0;
     }
 
     .search-bar {
@@ -133,7 +158,8 @@ export class ApplicationsComponent implements OnInit {
 
   constructor(
     private applicationService: ApplicationService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -173,6 +199,56 @@ export class ApplicationsComponent implements OnInit {
     this.jobReference = '';
     this.companyName = '';
     this.loadApplications();
+  }
+
+  openCreateDialog(): void {
+    const dialogRef = this.dialog.open(ApplicationDialogComponent, {
+      width: '600px',
+      data: null
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.createApplication(result);
+      }
+    });
+  }
+
+  openEditDialog(application: Application): void {
+    const dialogRef = this.dialog.open(ApplicationDialogComponent, {
+      width: '600px',
+      data: application
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.updateApplication(application.id!, result);
+      }
+    });
+  }
+
+  createApplication(applicationData: any): void {
+    this.applicationService.createApplication(applicationData).subscribe({
+      next: () => {
+        this.snackBar.open('Application created successfully', 'Close', { duration: 3000 });
+        this.loadApplications();
+      },
+      error: (error) => {
+        this.snackBar.open('Failed to create application', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  updateApplication(id: number, applicationData: any): void {
+    this.applicationService.updateApplication(id, applicationData).subscribe({
+      next: () => {
+        this.snackBar.open('Application updated successfully', 'Close', { duration: 3000 });
+        this.loadApplications();
+      },
+      error: (error) => {
+        this.snackBar.open('Failed to update application', 'Close', { duration: 3000 });
+      }
+    });
   }
 
   deleteApplication(id: number): void {

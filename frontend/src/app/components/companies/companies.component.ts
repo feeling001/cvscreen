@@ -7,8 +7,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { CompanyService } from '../../services/company.service';
 import { Company } from '../../models/company.model';
+import { CompanyDialogComponent } from '../company-dialog/company-dialog.component';
 
 @Component({
   selector: 'app-companies',
@@ -21,11 +23,18 @@ import { Company } from '../../models/company.model';
     MatFormFieldModule,
     MatInputModule,
     MatIconModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatDialogModule
   ],
   template: `
     <div class="container">
-      <h2>Companies</h2>
+      <div class="header">
+        <h2>Companies</h2>
+        <button mat-raised-button color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          New Company
+        </button>
+      </div>
       
       <div class="search-bar">
         <mat-form-field appearance="outline">
@@ -57,7 +66,12 @@ import { Company } from '../../models/company.model';
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
           <td mat-cell *matCellDef="let company">
-            <button mat-icon-button color="warn" (click)="deleteCompany(company.id!)">
+            <button mat-icon-button color="primary" (click)="openEditDialog(company)"
+                    matTooltip="Edit">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="deleteCompany(company.id!)"
+                    matTooltip="Delete">
               <mat-icon>delete</mat-icon>
             </button>
           </td>
@@ -71,6 +85,17 @@ import { Company } from '../../models/company.model';
   styles: [`
     .container {
       padding: 20px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .header h2 {
+      margin: 0;
     }
 
     .search-bar {
@@ -96,7 +121,8 @@ export class CompaniesComponent implements OnInit {
 
   constructor(
     private companyService: CompanyService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -127,6 +153,56 @@ export class CompaniesComponent implements OnInit {
     } else {
       this.loadCompanies();
     }
+  }
+
+  openCreateDialog(): void {
+    const dialogRef = this.dialog.open(CompanyDialogComponent, {
+      width: '500px',
+      data: null
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.createCompany(result);
+      }
+    });
+  }
+
+  openEditDialog(company: Company): void {
+    const dialogRef = this.dialog.open(CompanyDialogComponent, {
+      width: '500px',
+      data: company
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.updateCompany(company.id!, result);
+      }
+    });
+  }
+
+  createCompany(companyData: Partial<Company>): void {
+    this.companyService.createCompany(companyData.name!, companyData.notes).subscribe({
+      next: () => {
+        this.snackBar.open('Company created successfully', 'Close', { duration: 3000 });
+        this.loadCompanies();
+      },
+      error: (error) => {
+        this.snackBar.open('Failed to create company', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  updateCompany(id: number, companyData: Partial<Company>): void {
+    this.companyService.updateCompany(id, companyData.name!, companyData.notes).subscribe({
+      next: () => {
+        this.snackBar.open('Company updated successfully', 'Close', { duration: 3000 });
+        this.loadCompanies();
+      },
+      error: (error) => {
+        this.snackBar.open('Failed to update company', 'Close', { duration: 3000 });
+      }
+    });
   }
 
   deleteCompany(id: number): void {

@@ -7,8 +7,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { JobService } from '../../services/job.service';
 import { Job } from '../../models/job.model';
+import { JobDialogComponent } from '../job-dialog/job-dialog.component';
 
 @Component({
   selector: 'app-jobs',
@@ -21,11 +23,18 @@ import { Job } from '../../models/job.model';
     MatFormFieldModule,
     MatInputModule,
     MatIconModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatDialogModule
   ],
   template: `
     <div class="container">
-      <h2>Jobs</h2>
+      <div class="header">
+        <h2>Jobs</h2>
+        <button mat-raised-button color="primary" (click)="openCreateDialog()">
+          <mat-icon>add</mat-icon>
+          New Job
+        </button>
+      </div>
       
       <div class="search-bar">
         <mat-form-field appearance="outline">
@@ -67,7 +76,12 @@ import { Job } from '../../models/job.model';
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
           <td mat-cell *matCellDef="let job">
-            <button mat-icon-button color="warn" (click)="deleteJob(job.id!)">
+            <button mat-icon-button color="primary" (click)="openEditDialog(job)"
+                    matTooltip="Edit">
+              <mat-icon>edit</mat-icon>
+            </button>
+            <button mat-icon-button color="warn" (click)="deleteJob(job.id!)"
+                    matTooltip="Delete">
               <mat-icon>delete</mat-icon>
             </button>
           </td>
@@ -81,6 +95,17 @@ import { Job } from '../../models/job.model';
   styles: [`
     .container {
       padding: 20px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .header h2 {
+      margin: 0;
     }
 
     .search-bar {
@@ -106,7 +131,8 @@ export class JobsComponent implements OnInit {
 
   constructor(
     private jobService: JobService,
-    private snackBar: MatSnackBar
+    private snackBar: MatSnackBar,
+    private dialog: MatDialog
   ) {}
 
   ngOnInit(): void {
@@ -137,6 +163,56 @@ export class JobsComponent implements OnInit {
     } else {
       this.loadJobs();
     }
+  }
+
+  openCreateDialog(): void {
+    const dialogRef = this.dialog.open(JobDialogComponent, {
+      width: '600px',
+      data: null
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.createJob(result);
+      }
+    });
+  }
+
+  openEditDialog(job: Job): void {
+    const dialogRef = this.dialog.open(JobDialogComponent, {
+      width: '600px',
+      data: job
+    });
+
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.updateJob(job.id!, result);
+      }
+    });
+  }
+
+  createJob(jobData: Partial<Job>): void {
+    this.jobService.createJob(jobData).subscribe({
+      next: () => {
+        this.snackBar.open('Job created successfully', 'Close', { duration: 3000 });
+        this.loadJobs();
+      },
+      error: (error) => {
+        this.snackBar.open('Failed to create job', 'Close', { duration: 3000 });
+      }
+    });
+  }
+
+  updateJob(id: number, jobData: Partial<Job>): void {
+    this.jobService.updateJob(id, jobData).subscribe({
+      next: () => {
+        this.snackBar.open('Job updated successfully', 'Close', { duration: 3000 });
+        this.loadJobs();
+      },
+      error: (error) => {
+        this.snackBar.open('Failed to update job', 'Close', { duration: 3000 });
+      }
+    });
   }
 
   deleteJob(id: number): void {
