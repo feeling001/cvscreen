@@ -41,11 +41,12 @@ public class Application {
     @Column(name = "application_date", nullable = false)
     private LocalDate applicationDate;
     
-    @Column(name = "cv_file_path")
+    // IMPORTANT: S'assurer que c'est bien String et non byte[]
+    @Column(name = "cv_file_path", length = 500)
     private String cvFilePath;
     
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 50)
     private ApplicationStatus status = ApplicationStatus.CV_RECEIVED;
     
     @Column(columnDefinition = "TEXT")
