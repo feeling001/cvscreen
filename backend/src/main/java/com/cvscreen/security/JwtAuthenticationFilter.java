@@ -5,6 +5,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,6 +19,7 @@ import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
+@Slf4j
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
@@ -32,6 +34,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             
             if (jwt != null && jwtUtils.validateJwtToken(jwt)) {
                 String username = jwtUtils.getUserNameFromJwtToken(jwt);
+                
+                log.debug("JWT valid for user: {}", username);
+                
                 UserDetails userDetails = userDetailsService.loadUserByUsername(username);
                 
                 UsernamePasswordAuthenticationToken authentication = 
@@ -39,9 +44,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                 
                 SecurityContextHolder.getContext().setAuthentication(authentication);
+                
+                log.debug("Set SecurityContext with user: {}", username);
+            } else {
+                log.debug("No valid JWT token found in request");
             }
         } catch (Exception e) {
-            logger.error("Cannot set user authentication: {}", e);
+            log.error("Cannot set user authentication: {}", e.getMessage());
         }
 
         filterChain.doFilter(request, response);
@@ -50,15 +59,24 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
         String path = request.getRequestURI();
-        // CORRECTION: Retiré /api/auth/ car context-path ajoute déjà /api
-        // Skip JWT filter for auth endpoints
-        return path.startsWith("/api/auth/") || 
+        String method = request.getMethod();
+        
+        log.debug("Checking if should not filter: {} {}", method, path);
+        
+        // Skip JWT filter for auth endpoints and OPTIONS requests
+        boolean shouldSkip = path.startsWith("/api/auth/") || 
                path.equals("/api/error") ||
-               "OPTIONS".equals(request.getMethod());
+               "OPTIONS".equals(method);
+               
+        log.debug("Should skip filter: {}", shouldSkip);
+        
+        return shouldSkip;
     }
 
     private String parseJwt(HttpServletRequest request) {
         String headerAuth = request.getHeader("Authorization");
+        
+        log.debug("Authorization header: {}", headerAuth != null ? "Present (Bearer ...)" : "Not present");
         
         if (StringUtils.hasText(headerAuth) && headerAuth.startsWith("Bearer ")) {
             return headerAuth.substring(7);
