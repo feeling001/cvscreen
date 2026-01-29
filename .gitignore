@@ -6,6 +6,8 @@
 frontend/.angular/
 frontend/package-lock.json
 
+backend/target/*
+
 # Système d'exploitation
 .DS_Store
 Thumbs.db
