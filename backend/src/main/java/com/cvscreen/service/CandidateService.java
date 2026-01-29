@@ -2,10 +2,8 @@ package com.cvscreen.service;
 
 import com.cvscreen.dto.*;
 import com.cvscreen.entity.Candidate;
-import com.cvscreen.entity.CandidateReview;
 import com.cvscreen.exception.ResourceNotFoundException;
 import com.cvscreen.repository.CandidateRepository;
-import com.cvscreen.repository.CandidateReviewRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +16,6 @@ import java.util.stream.Collectors;
 public class CandidateService {
     
     private final CandidateRepository candidateRepository;
-    private final CandidateReviewRepository reviewRepository;
     
     @Transactional(readOnly = true)
     public List<CandidateDTO> getAllCandidates() {
@@ -35,10 +32,6 @@ public class CandidateService {
         CandidateDTO dto = convertToDTO(candidate);
         dto.setApplications(candidate.getApplications().stream()
             .map(this::convertToApplicationSummary)
-            .collect(Collectors.toList()));
-        
-        dto.setReviews(reviewRepository.findByCandidateIdWithUser(id).stream()
-            .map(this::convertReviewToDTO)
             .collect(Collectors.toList()));
         
         return dto;
@@ -103,7 +96,6 @@ public class CandidateService {
         dto.setCreatedAt(candidate.getCreatedAt());
         dto.setUpdatedAt(candidate.getUpdatedAt());
         dto.setApplicationCount(candidate.getApplications() != null ? candidate.getApplications().size() : 0);
-        dto.setReviewCount(candidate.getReviews() != null ? candidate.getReviews().size() : 0);
         return dto;
     }
     
@@ -118,18 +110,6 @@ public class CandidateService {
         dto.setApplicationDate(application.getApplicationDate());
         dto.setStatus(application.getStatus().name());
         dto.setConclusion(application.getConclusion());
-        return dto;
-    }
-    
-    private CandidateReviewDTO convertReviewToDTO(CandidateReview review) {
-        CandidateReviewDTO dto = new CandidateReviewDTO();
-        dto.setId(review.getId());
-        dto.setCandidateId(review.getCandidate().getId());
-        dto.setUserId(review.getUser().getId());
-        dto.setUsername(review.getUser().getUsername());
-        dto.setDisplayName(review.getUser().getDisplayName());
-        dto.setComment(review.getComment());
-        dto.setCreatedAt(review.getCreatedAt());
         return dto;
     }
 }

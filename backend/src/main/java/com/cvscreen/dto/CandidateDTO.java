@@ -19,7 +19,5 @@ public class CandidateDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Integer applicationCount;
-    private Integer reviewCount;
     private List<ApplicationSummaryDTO> applications;
-    private List<CandidateReviewDTO> reviews;
 }

@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { Candidate, CandidateReview } from '../models/candidate.model';
+import { Candidate } from '../models/candidate.model';
 import { environment } from '../../environments/environment';
 
 @Injectable({
@@ -35,17 +35,5 @@ export class CandidateService {
 
   deleteCandidate(id: number): Observable<void> {
     return this.http.delete<void>(`${this.API_URL}/${id}`);
-  }
-
-  getReviews(candidateId: number): Observable<CandidateReview[]> {
-    return this.http.get<CandidateReview[]>(`${this.API_URL}/${candidateId}/reviews`);
-  }
-
-  addReview(candidateId: number, comment: string): Observable<CandidateReview> {
-    return this.http.post<CandidateReview>(`${this.API_URL}/${candidateId}/reviews`, { comment });
-  }
-
-  deleteReview(candidateId: number, reviewId: number): Observable<void> {
-    return this.http.delete<void>(`${this.API_URL}/${candidateId}/reviews/${reviewId}`);
   }
 }

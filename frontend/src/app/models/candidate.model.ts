@@ -7,9 +7,7 @@ export interface Candidate {
   createdAt?: string;
   updatedAt?: string;
   applicationCount?: number;
-  reviewCount?: number;
   applications?: ApplicationSummary[];
-  reviews?: CandidateReview[];
 }
 
 export interface ApplicationSummary {
@@ -22,14 +20,4 @@ export interface ApplicationSummary {
   applicationDate: string;
   status: string;
   conclusion?: string;
-}
-
-export interface CandidateReview {
-  id?: number;
-  candidateId: number;
-  userId: number;
-  username: string;
-  displayName?: string;
-  comment: string;
-  createdAt?: string;
 }

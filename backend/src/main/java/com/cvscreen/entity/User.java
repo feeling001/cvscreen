@@ -36,7 +36,7 @@ public class User {
     private LocalDateTime createdAt;
     
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
-    private List<CandidateReview> reviews = new ArrayList<>();
+    private List<ApplicationComment> applicationComments = new ArrayList<>();
     
     @PrePersist
     protected void onCreate() {

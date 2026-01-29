@@ -31,7 +31,7 @@ import { CandidateDialogComponent } from '../candidate-dialog/candidate-dialog.c
 })
 export class CandidatesComponent implements OnInit {
   candidates: Candidate[] = [];
-  displayedColumns: string[] = ['firstName', 'lastName', 'applicationCount', 'reviewCount', 'actions'];
+  displayedColumns: string[] = ['firstName', 'lastName', 'applicationCount', 'actions'];
   searchTerm = '';
 
   constructor(

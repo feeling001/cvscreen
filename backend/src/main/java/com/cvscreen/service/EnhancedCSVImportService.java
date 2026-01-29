@@ -2,12 +2,10 @@ package com.cvscreen.service;
 
 import com.cvscreen.entity.Application;
 import com.cvscreen.entity.Candidate;
-import com.cvscreen.entity.CandidateReview;
 import com.cvscreen.entity.Company;
 import com.cvscreen.entity.Job;
 import com.cvscreen.entity.User;
 import com.cvscreen.repository.ApplicationRepository;
-import com.cvscreen.repository.CandidateReviewRepository;
 import com.opencsv.CSVParser;
 import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
@@ -48,7 +46,6 @@ public class EnhancedCSVImportService {
     private final CandidateService candidateService;
     private final JobService jobService;
     private final CompanyService companyService;
-    private final CandidateReviewRepository reviewRepository;
     
     // CSV column indices
     private static final int COL_DATE = 0;

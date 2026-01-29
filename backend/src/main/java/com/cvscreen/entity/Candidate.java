@@ -38,9 +38,6 @@ public class Candidate {
     @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Application> applications = new ArrayList<>();
     
-    @OneToMany(mappedBy = "candidate", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CandidateReview> reviews = new ArrayList<>();
-    
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
