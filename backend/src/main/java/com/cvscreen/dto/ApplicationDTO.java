@@ -27,7 +27,7 @@ public class ApplicationDTO {
     private String conclusion;
     private String evaluationNotes;
     private String cvFilePath;
-    private Boolean hasReviews;
+    private Long commentCount;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

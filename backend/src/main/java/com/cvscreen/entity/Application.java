@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "applications")
@@ -41,7 +43,6 @@ public class Application {
     @Column(name = "application_date", nullable = false)
     private LocalDate applicationDate;
     
-    // IMPORTANT: S'assurer que c'est bien String et non byte[]
     @Column(name = "cv_file_path", length = 500)
     private String cvFilePath;
     
@@ -60,6 +61,9 @@ public class Application {
     
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+    
+    @OneToMany(mappedBy = "application", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<ApplicationComment> comments = new ArrayList<>();
     
     @PrePersist
     protected void onCreate() {

@@ -10,10 +10,13 @@ import { MatSelectModule } from '@angular/material/select';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatBadgeModule } from '@angular/material/badge';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ApplicationService } from '../../services/application.service';
 import { CompanyService } from '../../services/company.service';
-import { Application, ApplicationStatus } from '../../models/application.model';
+import { Application } from '../../models/application.model';
 import { ApplicationDialogComponent } from '../application-dialog/application-dialog.component';
+import { ApplicationCommentsDialogComponent } from '../application-comments-dialog/application-comments-dialog.component';
 
 @Component({
   selector: 'app-applications',
@@ -29,7 +32,9 @@ import { ApplicationDialogComponent } from '../application-dialog/application-di
     MatSelectModule,
     MatSnackBarModule,
     MatDialogModule,
-    MatChipsModule
+    MatChipsModule,
+    MatBadgeModule,
+    MatTooltipModule
   ],
   template: `
     <div class="container">
@@ -162,6 +167,22 @@ import { ApplicationDialogComponent } from '../application-dialog/application-di
           <td mat-cell *matCellDef="let app">{{ app.applicationDate | date:'dd/MM/yyyy' }}</td>
         </ng-container>
 
+        <ng-container matColumnDef="comments">
+          <th mat-header-cell *matHeaderCellDef>Comments</th>
+          <td mat-cell *matCellDef="let app">
+            <button 
+              mat-icon-button 
+              color="accent" 
+              (click)="openCommentsDialog(app)"
+              [matBadge]="app.commentCount || 0"
+              [matBadgeHidden]="!app.commentCount"
+              matBadgeColor="warn"
+              matTooltip="View/Add Comments">
+              <mat-icon>comment</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
           <td mat-cell *matCellDef="let app">
@@ -283,9 +304,8 @@ import { ApplicationDialogComponent } from '../application-dialog/application-di
 export class ApplicationsComponent implements OnInit {
   applications: Application[] = [];
   companies: any[] = [];
-  displayedColumns: string[] = ['candidateName', 'jobReference', 'roleCategory', 'companyName', 'dailyRate', 'status', 'applicationDate', 'actions'];
+  displayedColumns: string[] = ['candidateName', 'jobReference', 'roleCategory', 'companyName', 'dailyRate', 'status', 'applicationDate', 'comments', 'actions'];
   
-  // Search and filters
   searchTerm = '';
   filterStatus: string | null = null;
   filterCompany: string | null = null;
@@ -332,17 +352,9 @@ export class ApplicationsComponent implements OnInit {
   applyFilters(): void {
     const filters: any = {};
 
-    // Search term can match name, role, or date
     if (this.searchTerm.trim()) {
-      // Check if it looks like a date (contains - or /)
-      if (this.searchTerm.includes('-') || this.searchTerm.includes('/')) {
-        // Don't add to candidateName, backend will handle date search
-        filters.candidateName = this.searchTerm.trim();
-      } else {
-        // Could be name or role
-        filters.candidateName = this.searchTerm.trim();
-        filters.roleCategory = this.searchTerm.trim();
-      }
+      filters.candidateName = this.searchTerm.trim();
+      filters.roleCategory = this.searchTerm.trim();
     }
 
     if (this.filterStatus) {
@@ -357,7 +369,6 @@ export class ApplicationsComponent implements OnInit {
       filters.roleCategory = this.filterRole.trim();
     }
 
-    // If we have any filters, use search endpoint
     if (Object.keys(filters).length > 0) {
       this.applicationService.searchApplications(filters).subscribe({
         next: (data) => {
@@ -395,6 +406,18 @@ export class ApplicationsComponent implements OnInit {
       'ON_HOLD': 'On Hold'
     };
     return statusLabels[status] || status;
+  }
+
+  openCommentsDialog(application: Application): void {
+    const dialogRef = this.dialog.open(ApplicationCommentsDialogComponent, {
+      width: '700px',
+      data: { applicationId: application.id }
+    });
+
+    dialogRef.afterClosed().subscribe(() => {
+      // Reload applications to update comment count
+      this.applyFilters();
+    });
   }
 
   openCreateDialog(): void {
@@ -439,7 +462,7 @@ export class ApplicationsComponent implements OnInit {
     this.applicationService.updateApplication(id, applicationData).subscribe({
       next: () => {
         this.snackBar.open('Application updated successfully', 'Close', { duration: 3000 });
-        this.applyFilters(); // Reapply filters to refresh the view
+        this.applyFilters();
       },
       error: (error) => {
         this.snackBar.open('Failed to update application', 'Close', { duration: 3000 });
@@ -452,7 +475,7 @@ export class ApplicationsComponent implements OnInit {
       this.applicationService.deleteApplication(id).subscribe({
         next: () => {
           this.snackBar.open('Application deleted', 'Close', { duration: 3000 });
-          this.applyFilters(); // Reapply filters to refresh the view
+          this.applyFilters();
         },
         error: (error) => {
           this.snackBar.open('Failed to delete application', 'Close', { duration: 3000 });

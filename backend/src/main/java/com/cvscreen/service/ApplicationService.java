@@ -7,9 +7,9 @@ import com.cvscreen.entity.Candidate;
 import com.cvscreen.entity.Company;
 import com.cvscreen.entity.Job;
 import com.cvscreen.exception.ResourceNotFoundException;
+import com.cvscreen.repository.ApplicationCommentRepository;
 import com.cvscreen.repository.ApplicationRepository;
 import com.cvscreen.repository.CandidateRepository;
-import com.cvscreen.repository.CandidateReviewRepository;
 import com.cvscreen.repository.CompanyRepository;
 import com.cvscreen.repository.JobRepository;
 import com.cvscreen.specification.ApplicationSpecification;
@@ -36,7 +36,7 @@ public class ApplicationService {
     private final CandidateRepository candidateRepository;
     private final JobRepository jobRepository;
     private final CompanyRepository companyRepository;
-    private final CandidateReviewRepository reviewRepository;
+    private final ApplicationCommentRepository commentRepository;
     
     private static final String CV_STORAGE_PATH = "./cvs";
     
@@ -57,8 +57,6 @@ public class ApplicationService {
     @Transactional(readOnly = true)
     public List<ApplicationDTO> searchApplications(String candidateName, String jobReference, 
                                                    String companyName, String roleCategory, String status) {
-        // Use JPA Specification to build the query dynamically
-        // This avoids PostgreSQL type inference issues with prepared statements
         Specification<Application> spec = ApplicationSpecification.searchApplications(
             candidateName, 
             jobReference, 
@@ -163,20 +161,17 @@ public class ApplicationService {
         Application application = applicationRepository.findById(applicationId)
             .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + applicationId));
         
-        // Create directory if not exists
         Path uploadPath = Paths.get(CV_STORAGE_PATH);
         if (!Files.exists(uploadPath)) {
             Files.createDirectories(uploadPath);
         }
         
-        // Generate unique filename
         String originalFilename = file.getOriginalFilename();
         String fileExtension = originalFilename != null && originalFilename.contains(".") 
             ? originalFilename.substring(originalFilename.lastIndexOf(".")) 
             : "";
         String newFilename = UUID.randomUUID().toString() + fileExtension;
         
-        // Save file
         Path filePath = uploadPath.resolve(newFilename);
         Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
         
@@ -214,9 +209,9 @@ public class ApplicationService {
         dto.setCreatedAt(application.getCreatedAt());
         dto.setUpdatedAt(application.getUpdatedAt());
         
-        // Check if candidate has reviews
-        long reviewCount = reviewRepository.findByCandidateId(application.getCandidate().getId()).size();
-        dto.setHasReviews(reviewCount > 0);
+        // Get comment count for this application
+        long commentCount = commentRepository.countByApplicationId(application.getId());
+        dto.setCommentCount(commentCount);
         
         return dto;
     }
