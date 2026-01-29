@@ -8,7 +8,10 @@ import com.cvscreen.entity.Job;
 import com.cvscreen.entity.User;
 import com.cvscreen.repository.ApplicationRepository;
 import com.cvscreen.repository.CandidateReviewRepository;
+import com.opencsv.CSVParser;
+import com.opencsv.CSVParserBuilder;
 import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
 import com.opencsv.exceptions.CsvException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +28,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Enhanced CSV Import Service
@@ -74,8 +78,11 @@ public class EnhancedCSVImportService {
                 return result;
             }
             
-            // Skip header row
-            List<String[]> dataRecords = records.subList(1, records.size());
+            // Skip header row and filter empty lines
+            List<String[]> dataRecords = records.subList(1, records.size()).stream()
+                .filter(record -> record.length > 0 && !isEmptyRecord(record))
+                .collect(Collectors.toList());
+            
             log.info("Starting import of {} records", dataRecords.size());
             
             int lineNumber = 2; // Start at 2 (line 1 is header)
@@ -106,14 +113,17 @@ public class EnhancedCSVImportService {
      */
     private List<String[]> readCSVWithEncoding(MultipartFile file) throws IOException, CsvException {
         // Try UTF-8 first, then fallback to ISO-8859-1 if needed
-        try (CSVReader reader = new CSVReader(
-                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-            reader.skip(0); // Set separator to semicolon
+        try (CSVReader reader = new CSVReaderBuilder(
+                new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))
+                .withCSVParser(new CSVParserBuilder().withSeparator(';').build())
+                .build()) {
             return reader.readAll();
         } catch (Exception e) {
             log.warn("UTF-8 reading failed, trying ISO-8859-1", e);
-            try (CSVReader reader = new CSVReader(
-                    new InputStreamReader(file.getInputStream(), "ISO-8859-1"))) {
+            try (CSVReader reader = new CSVReaderBuilder(
+                    new InputStreamReader(file.getInputStream(), "ISO-8859-1"))
+                    .withCSVParser(new CSVParserBuilder().withSeparator(';').build())
+                    .build()) {
                 return reader.readAll();
             }
         }
@@ -369,6 +379,18 @@ public class EnhancedCSVImportService {
     }
     
     /**
+     * Check if a record is empty (all fields are null or whitespace)
+     */
+    private boolean isEmptyRecord(String[] record) {
+        for (String field : record) {
+            if (field != null && !field.trim().isEmpty()) {
+                return false;
+            }
+        }
+        return true;
+    }
+    
+    /**
      * Inner class to hold parsed candidate name
      */
     private static class CandidateName {
@@ -439,3 +461,4 @@ public class EnhancedCSVImportService {
         }
     }
 }
+
