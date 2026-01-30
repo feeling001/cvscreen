@@ -1,15 +1,17 @@
 package com.cvscreen.service;
 
 import com.cvscreen.entity.Application;
+import com.cvscreen.entity.ApplicationComment;
 import com.cvscreen.entity.Candidate;
 import com.cvscreen.entity.Company;
 import com.cvscreen.entity.Job;
 import com.cvscreen.entity.User;
+import com.cvscreen.repository.ApplicationCommentRepository;
 import com.cvscreen.repository.ApplicationRepository;
-import com.opencsv.CSVParser;
-import com.opencsv.CSVParserBuilder;
+import com.cvscreen.repository.UserRepository;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
+import com.opencsv.CSVParserBuilder;
 import com.opencsv.exceptions.CsvException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +21,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -43,6 +44,8 @@ import java.util.stream.Collectors;
 public class EnhancedCSVImportService {
     
     private final ApplicationRepository applicationRepository;
+    private final ApplicationCommentRepository commentRepository;
+    private final UserRepository userRepository;
     private final CandidateService candidateService;
     private final JobService jobService;
     private final CompanyService companyService;
@@ -212,11 +215,11 @@ public class EnhancedCSVImportService {
             application.setConclusion(conclusion);
         }
         
-        // Save application
-        applicationRepository.save(application);
+        // Save application first to get the ID
+        application = applicationRepository.save(application);
         
-        // Create candidate reviews for each non-empty review
-        createReviewsFromFeedback(candidate, avisCv1, avisCv2, avisInterview, result);
+        // Create application comments for each non-empty review
+        createCommentsFromFeedback(application, avisCv1, avisCv2, avisInterview);
         
         log.debug("Successfully imported application for {} {} (line {})", 
                 candidateName.firstName, candidateName.lastName, lineNumber);
@@ -300,47 +303,47 @@ public class EnhancedCSVImportService {
     }
     
     /**
-     * Create candidate reviews from feedback fields
+     * Create application comments from feedback fields
+     * Now creates ApplicationComment instead of CandidateReview
      */
-    private void createReviewsFromFeedback(Candidate candidate, String avisCv1, 
-                                          String avisCv2, String avisInterview, 
-                                          ImportResult result) {
+    private void createCommentsFromFeedback(Application application, String avisCv1, 
+                                          String avisCv2, String avisInterview) {
         // Get or create system user for imports
         User systemUser = getSystemUser();
         
         if (avisCv1 != null && !avisCv1.isEmpty()) {
-            createCandidateReview(candidate, systemUser, "CV Review 1: " + avisCv1);
+            createApplicationComment(application, systemUser, "CV Review 1: " + avisCv1);
         }
         
         if (avisCv2 != null && !avisCv2.isEmpty()) {
-            createCandidateReview(candidate, systemUser, "CV Review 2: " + avisCv2);
+            createApplicationComment(application, systemUser, "CV Review 2: " + avisCv2);
         }
         
         if (avisInterview != null && !avisInterview.isEmpty()) {
-            createCandidateReview(candidate, systemUser, "Interview Feedback: " + avisInterview);
+            createApplicationComment(application, systemUser, "Interview Feedback: " + avisInterview);
         }
     }
     
     /**
-     * Create a candidate review
+     * Create an application comment
      */
-    private void createCandidateReview(Candidate candidate, User user, String comment) {
-        CandidateReview review = new CandidateReview();
-        review.setCandidate(candidate);
-        review.setUser(user);
-        review.setComment(comment);
-        reviewRepository.save(review);
+    private void createApplicationComment(Application application, User user, String commentText) {
+        ApplicationComment comment = new ApplicationComment();
+        comment.setApplication(application);
+        comment.setUser(user);
+        comment.setComment(commentText);
+        commentRepository.save(comment);
     }
     
     /**
      * Get system user for automated imports
      */
     private User getSystemUser() {
-        // This should be implemented to return a system/import user
-        // For now, we'll create a placeholder - you should implement proper user lookup
-        User systemUser = new User();
-        systemUser.setId(1L); // Assume admin user has ID 1
-        return systemUser;
+        // Try to find the admin user, or create a system import user
+        return userRepository.findByUsername("admin")
+                .orElseGet(() -> userRepository.findById(1L)
+                        .orElseThrow(() -> new RuntimeException(
+                            "No admin user found. Please ensure at least one user exists in the system.")));
     }
     
     /**
@@ -458,4 +461,3 @@ public class EnhancedCSVImportService {
         }
     }
 }
-
