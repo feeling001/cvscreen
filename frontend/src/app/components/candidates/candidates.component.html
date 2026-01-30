@@ -37,6 +37,10 @@
     <ng-container matColumnDef="actions">
       <th mat-header-cell *matHeaderCellDef>Actions</th>
       <td mat-cell *matCellDef="let candidate">
+        <button mat-icon-button color="accent" (click)="viewCandidateDetails(candidate.id!)"
+                matTooltip="View Details">
+          <mat-icon>visibility</mat-icon>
+        </button>
         <button mat-icon-button color="primary" (click)="openEditDialog(candidate)" 
                 matTooltip="Edit">
           <mat-icon>edit</mat-icon>
@@ -51,4 +55,79 @@
     <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
     <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
   </table>
+
+  <!-- Candidate Details Section -->
+  <div id="candidate-details" *ngIf="selectedCandidate" class="details-section">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>
+          <div class="details-header">
+            <div>
+              <mat-icon>person</mat-icon>
+              {{ selectedCandidate.firstName }} {{ selectedCandidate.lastName }}
+            </div>
+            <button mat-icon-button (click)="closeDetails()" matTooltip="Close">
+              <mat-icon>close</mat-icon>
+            </button>
+          </div>
+        </mat-card-title>
+      </mat-card-header>
+
+      <mat-card-content>
+        <div class="detail-section">
+          <h3>General Information</h3>
+          <p><strong>Full Name:</strong> {{ selectedCandidate.fullName }}</p>
+          <p><strong>Total Applications:</strong> {{ selectedCandidate.applicationCount || 0 }}</p>
+          <p *ngIf="selectedCandidate.globalNotes">
+            <strong>Global Notes:</strong><br>
+            {{ selectedCandidate.globalNotes }}
+          </p>
+        </div>
+
+        <div class="detail-section" *ngIf="selectedCandidate.applications && selectedCandidate.applications.length > 0">
+          <h3>Application History ({{ selectedCandidate.applications.length }})</h3>
+          
+          <table mat-table [dataSource]="selectedCandidate.applications" class="applications-table">
+            <ng-container matColumnDef="jobReference">
+              <th mat-header-cell *matHeaderCellDef>Job Reference</th>
+              <td mat-cell *matCellDef="let app">
+                {{ app.jobReference || 'Spontaneous' }}
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="roleCategory">
+              <th mat-header-cell *matHeaderCellDef>Role</th>
+              <td mat-cell *matCellDef="let app">{{ app.roleCategory }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="companyName">
+              <th mat-header-cell *matHeaderCellDef>Company</th>
+              <td mat-cell *matCellDef="let app">{{ app.companyName || '-' }}</td>
+            </ng-container>
+
+            <ng-container matColumnDef="status">
+              <th mat-header-cell *matHeaderCellDef>Status</th>
+              <td mat-cell *matCellDef="let app">
+                <span class="status-badge" [class.approved]="app.status === 'APPROVED_FOR_MISSION'">
+                  {{ getStatusLabel(app.status) }}
+                </span>
+              </td>
+            </ng-container>
+
+            <ng-container matColumnDef="applicationDate">
+              <th mat-header-cell *matHeaderCellDef>Date</th>
+              <td mat-cell *matCellDef="let app">{{ app.applicationDate | date:'dd/MM/yyyy' }}</td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="applicationColumns"></tr>
+            <tr mat-row *matRowDef="let row; columns: applicationColumns;"></tr>
+          </table>
+        </div>
+
+        <div class="detail-section" *ngIf="!selectedCandidate.applications || selectedCandidate.applications.length === 0">
+          <p class="no-data">No applications found for this candidate.</p>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  </div>
 </div>

@@ -27,3 +27,77 @@
 table {
   width: 100%;
 }
+
+/* Candidate Details Section */
+.details-section {
+  margin-top: 32px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.details-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.details-header > div {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.detail-section {
+  margin-bottom: 24px;
+}
+
+.detail-section h3 {
+  color: #424242;
+  margin-bottom: 16px;
+  font-size: 18px;
+  border-bottom: 2px solid #3f51b5;
+  padding-bottom: 8px;
+}
+
+.detail-section p {
+  margin: 8px 0;
+  line-height: 1.6;
+}
+
+.applications-table {
+  width: 100%;
+  margin-top: 16px;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  background-color: #e0e0e0;
+  color: #333;
+  display: inline-block;
+}
+
+.status-badge.approved {
+  background-color: #4caf50;
+  color: white;
+}
+
+.no-data {
+  color: #999;
+  font-style: italic;
+  text-align: center;
+  padding: 24px;
+}

@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -8,6 +9,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatIconModule } from '@angular/material/icon';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { CompanyService } from '../../services/company.service';
 import { Company } from '../../models/company.model';
 import { CompanyDialogComponent } from '../company-dialog/company-dialog.component';
@@ -24,7 +26,8 @@ import { CompanyDialogComponent } from '../company-dialog/company-dialog.compone
     MatInputModule,
     MatIconModule,
     MatSnackBarModule,
-    MatDialogModule
+    MatDialogModule,
+    MatTooltipModule
   ],
   template: `
     <div class="container">
@@ -50,7 +53,13 @@ import { CompanyDialogComponent } from '../company-dialog/company-dialog.compone
       <table mat-table [dataSource]="companies" class="mat-elevation-z8">
         <ng-container matColumnDef="name">
           <th mat-header-cell *matHeaderCellDef>Name</th>
-          <td mat-cell *matCellDef="let company">{{ company.name }}</td>
+          <td mat-cell *matCellDef="let company">
+            <a class="link" 
+               (click)="navigateToApplications(company.name)" 
+               matTooltip="View applications from this company">
+              {{ company.name }}
+            </a>
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="applicationCount">
@@ -60,7 +69,9 @@ import { CompanyDialogComponent } from '../company-dialog/company-dialog.compone
 
         <ng-container matColumnDef="notes">
           <th mat-header-cell *matHeaderCellDef>Notes</th>
-          <td mat-cell *matCellDef="let company">{{ company.notes || '-' }}</td>
+          <td mat-cell *matCellDef="let company">
+            <span class="notes-preview">{{ company.notes || '-' }}</span>
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="actions">
@@ -112,6 +123,25 @@ import { CompanyDialogComponent } from '../company-dialog/company-dialog.compone
     table {
       width: 100%;
     }
+
+    .link {
+      color: #3f51b5;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .link:hover {
+      text-decoration: underline;
+    }
+
+    .notes-preview {
+      display: block;
+      max-width: 300px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
   `]
 })
 export class CompaniesComponent implements OnInit {
@@ -122,7 +152,8 @@ export class CompaniesComponent implements OnInit {
   constructor(
     private companyService: CompanyService,
     private snackBar: MatSnackBar,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -152,6 +183,14 @@ export class CompaniesComponent implements OnInit {
       });
     } else {
       this.loadCompanies();
+    }
+  }
+
+  navigateToApplications(companyName: string): void {
+    if (companyName) {
+      this.router.navigate(['/dashboard/applications'], { 
+        queryParams: { companyName } 
+      });
     }
   }
 

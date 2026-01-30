@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Router, ActivatedRoute } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -83,6 +84,13 @@ import { ApplicationCommentsDialogComponent } from '../application-comments-dial
           </mat-form-field>
 
           <mat-form-field appearance="outline">
+            <mat-label>Filter by Job Reference</mat-label>
+            <input matInput [(ngModel)]="filterJobReference" 
+                   placeholder="e.g. I01234"
+                   (keyup.enter)="applyFilters()">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
             <mat-label>Filter by Role</mat-label>
             <input matInput [(ngModel)]="filterRole" 
                    placeholder="e.g. Architect"
@@ -114,6 +122,10 @@ import { ApplicationCommentsDialogComponent } from '../application-comments-dial
               Company: {{ filterCompany }}
               <button matChipRemove><mat-icon>cancel</mat-icon></button>
             </mat-chip>
+            <mat-chip *ngIf="filterJobReference" (removed)="filterJobReference = ''; applyFilters()">
+              Job: {{ filterJobReference }}
+              <button matChipRemove><mat-icon>cancel</mat-icon></button>
+            </mat-chip>
             <mat-chip *ngIf="filterRole" (removed)="filterRole = ''; applyFilters()">
               Role: {{ filterRole }}
               <button matChipRemove><mat-icon>cancel</mat-icon></button>
@@ -129,12 +141,25 @@ import { ApplicationCommentsDialogComponent } from '../application-comments-dial
       <table mat-table [dataSource]="applications" class="mat-elevation-z8">
         <ng-container matColumnDef="candidateName">
           <th mat-header-cell *matHeaderCellDef>Candidate</th>
-          <td mat-cell *matCellDef="let app">{{ app.candidateName }}</td>
+          <td mat-cell *matCellDef="let app">
+            <a class="link" (click)="navigateToCandidate(app.candidateId)" 
+               matTooltip="View candidate details">
+              {{ app.candidateName }}
+            </a>
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="jobReference">
           <th mat-header-cell *matHeaderCellDef>Job Reference</th>
-          <td mat-cell *matCellDef="let app">{{ app.jobReference || 'Spontaneous' }}</td>
+          <td mat-cell *matCellDef="let app">
+            <a *ngIf="app.jobReference" 
+               class="link" 
+               (click)="navigateToJob(app.jobId)" 
+               matTooltip="View job details">
+              {{ app.jobReference }}
+            </a>
+            <span *ngIf="!app.jobReference" class="spontaneous">Spontaneous</span>
+          </td>
         </ng-container>
 
         <ng-container matColumnDef="roleCategory">
@@ -299,6 +324,22 @@ import { ApplicationCommentsDialogComponent } from '../application-comments-dial
     .approved-status {
       font-weight: 600;
     }
+
+    .link {
+      color: #3f51b5;
+      cursor: pointer;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .link:hover {
+      text-decoration: underline;
+    }
+
+    .spontaneous {
+      color: #999;
+      font-style: italic;
+    }
   `]
 })
 export class ApplicationsComponent implements OnInit {
@@ -309,18 +350,36 @@ export class ApplicationsComponent implements OnInit {
   searchTerm = '';
   filterStatus: string | null = null;
   filterCompany: string | null = null;
+  filterJobReference = '';
   filterRole = '';
 
   constructor(
     private applicationService: ApplicationService,
     private companyService: CompanyService,
     private snackBar: MatSnackBar,
-    private dialog: MatDialog
+    private dialog: MatDialog,
+    private router: Router,
+    private route: ActivatedRoute
   ) {}
 
   ngOnInit(): void {
-    this.loadApplications();
     this.loadCompanies();
+    
+    // Check for query parameters (from navigation)
+    this.route.queryParams.subscribe(params => {
+      const jobReference = params['jobReference'];
+      const companyName = params['companyName'];
+      
+      if (jobReference) {
+        this.filterJobReference = jobReference;
+        this.applyFilters();
+      } else if (companyName) {
+        this.filterCompany = companyName;
+        this.applyFilters();
+      } else {
+        this.loadApplications();
+      }
+    });
   }
 
   loadApplications(): void {
@@ -354,7 +413,6 @@ export class ApplicationsComponent implements OnInit {
 
     if (this.searchTerm.trim()) {
       filters.candidateName = this.searchTerm.trim();
-      filters.roleCategory = this.searchTerm.trim();
     }
 
     if (this.filterStatus) {
@@ -363,6 +421,10 @@ export class ApplicationsComponent implements OnInit {
 
     if (this.filterCompany) {
       filters.companyName = this.filterCompany;
+    }
+
+    if (this.filterJobReference.trim()) {
+      filters.jobReference = this.filterJobReference.trim();
     }
 
     if (this.filterRole.trim()) {
@@ -387,12 +449,20 @@ export class ApplicationsComponent implements OnInit {
     this.searchTerm = '';
     this.filterStatus = null;
     this.filterCompany = null;
+    this.filterJobReference = '';
     this.filterRole = '';
+    
+    // Clear query params
+    this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: {}
+    });
+    
     this.loadApplications();
   }
 
   hasActiveFilters(): boolean {
-    return !!(this.searchTerm || this.filterStatus || this.filterCompany || this.filterRole);
+    return !!(this.searchTerm || this.filterStatus || this.filterCompany || this.filterJobReference || this.filterRole);
   }
 
   getStatusLabel(status: string): string {
@@ -408,6 +478,22 @@ export class ApplicationsComponent implements OnInit {
     return statusLabels[status] || status;
   }
 
+  navigateToCandidate(candidateId: number): void {
+    if (candidateId) {
+      this.router.navigate(['/dashboard/candidates'], { 
+        queryParams: { candidateId } 
+      });
+    }
+  }
+
+  navigateToJob(jobId: number): void {
+    if (jobId) {
+      this.router.navigate(['/dashboard/jobs'], { 
+        queryParams: { jobId } 
+      });
+    }
+  }
+
   openCommentsDialog(application: Application): void {
     const dialogRef = this.dialog.open(ApplicationCommentsDialogComponent, {
       width: '700px',
@@ -415,7 +501,6 @@ export class ApplicationsComponent implements OnInit {
     });
 
     dialogRef.afterClosed().subscribe(() => {
-      // Reload applications to update comment count
       this.applyFilters();
     });
   }
