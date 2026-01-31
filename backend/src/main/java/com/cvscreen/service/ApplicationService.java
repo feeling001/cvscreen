@@ -14,6 +14,8 @@ import com.cvscreen.repository.CompanyRepository;
 import com.cvscreen.repository.JobRepository;
 import com.cvscreen.specification.ApplicationSpecification;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,6 +43,11 @@ public class ApplicationService {
     private static final String CV_STORAGE_PATH = "./cvs";
     
     @Transactional(readOnly = true)
+    public Page<ApplicationDTO> getAllApplicationsPaginated(Pageable pageable) {
+        return applicationRepository.findAll(pageable).map(this::convertToDTO);
+    }
+    
+    @Transactional(readOnly = true)
     public List<ApplicationDTO> getAllApplications() {
         return applicationRepository.findAll().stream()
             .map(this::convertToDTO)
@@ -52,6 +59,21 @@ public class ApplicationService {
         Application application = applicationRepository.findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + id));
         return convertToDTO(application);
+    }
+    
+    @Transactional(readOnly = true)
+    public Page<ApplicationDTO> searchApplicationsPaginated(String candidateName, String jobReference, 
+                                                           String companyName, String roleCategory, 
+                                                           String status, Pageable pageable) {
+        Specification<Application> spec = ApplicationSpecification.searchApplications(
+            candidateName, 
+            jobReference, 
+            companyName, 
+            roleCategory, 
+            status
+        );
+        
+        return applicationRepository.findAll(spec, pageable).map(this::convertToDTO);
     }
     
     @Transactional(readOnly = true)

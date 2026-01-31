@@ -1,6 +1,8 @@
 package com.cvscreen.repository;
 
 import com.cvscreen.entity.Candidate;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -20,6 +22,11 @@ public interface CandidateRepository extends JpaRepository<Candidate, Long> {
            "LOWER(c.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
            "LOWER(c.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
     List<Candidate> searchByName(@Param("searchTerm") String searchTerm);
+    
+    @Query("SELECT c FROM Candidate c WHERE " +
+           "LOWER(c.firstName) LIKE LOWER(CONCAT('%', :searchTerm, '%')) OR " +
+           "LOWER(c.lastName) LIKE LOWER(CONCAT('%', :searchTerm, '%'))")
+    Page<Candidate> searchByName(@Param("searchTerm") String searchTerm, Pageable pageable);
     
     @Query("SELECT DISTINCT c FROM Candidate c " +
            "LEFT JOIN FETCH c.applications a " +

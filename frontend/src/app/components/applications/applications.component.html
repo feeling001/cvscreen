@@ -1,0 +1,217 @@
+<div class="container">
+  <div class="header">
+    <h2>Applications</h2>
+    <button mat-raised-button color="primary" (click)="openCreateDialog()">
+      <mat-icon>add</mat-icon>
+      New Application
+    </button>
+  </div>
+  
+  <div class="filters-section">
+    <div class="search-row">
+      <mat-form-field appearance="outline">
+        <mat-label>Search (name, role, date)</mat-label>
+        <input matInput [(ngModel)]="searchTerm" 
+               placeholder="e.g. John, Architect, 2024-01-15"
+               (keyup.enter)="search()">
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </div>
+
+    <div class="filters-row">
+      <mat-form-field appearance="outline">
+        <mat-label>Filter by Status</mat-label>
+        <mat-select [(ngModel)]="filterStatus" (selectionChange)="applyFilters()">
+          <mat-option [value]="null">All Statuses</mat-option>
+          <mat-option value="CV_RECEIVED">CV Received</mat-option>
+          <mat-option value="CV_REVIEWED">CV Reviewed</mat-option>
+          <mat-option value="REMOTE_INTERVIEW">Remote Interview</mat-option>
+          <mat-option value="ONSITE_INTERVIEW">Onsite Interview</mat-option>
+          <mat-option value="APPROVED_FOR_MISSION">Approved for Mission</mat-option>
+          <mat-option value="REJECTED">Rejected</mat-option>
+          <mat-option value="ON_HOLD">On Hold</mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Filter by Company</mat-label>
+        <mat-select [(ngModel)]="filterCompany" (selectionChange)="applyFilters()">
+          <mat-option [value]="null">All Companies</mat-option>
+          <mat-option *ngFor="let company of companies" [value]="company.name">
+            {{ company.name }}
+          </mat-option>
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Filter by Job Reference</mat-label>
+        <input matInput [(ngModel)]="filterJobReference" 
+               placeholder="e.g. I01234"
+               (keyup.enter)="applyFilters()">
+      </mat-form-field>
+
+      <mat-form-field appearance="outline">
+        <mat-label>Filter by Role</mat-label>
+        <input matInput [(ngModel)]="filterRole" 
+               placeholder="e.g. Architect"
+               (keyup.enter)="applyFilters()">
+      </mat-form-field>
+
+      <button mat-raised-button color="primary" (click)="applyFilters()">
+        <mat-icon>filter_list</mat-icon>
+        Apply Filters
+      </button>
+      
+      <button mat-raised-button (click)="clearFilters()">
+        <mat-icon>clear</mat-icon>
+        Clear All
+      </button>
+    </div>
+
+    <div class="active-filters" *ngIf="hasActiveFilters()">
+      <mat-chip-set>
+        <mat-chip *ngIf="searchTerm" (removed)="searchTerm = ''; applyFilters()">
+          Search: {{ searchTerm }}
+          <button matChipRemove><mat-icon>cancel</mat-icon></button>
+        </mat-chip>
+        <mat-chip *ngIf="filterStatus" (removed)="filterStatus = null; applyFilters()">
+          Status: {{ getStatusLabel(filterStatus) }}
+          <button matChipRemove><mat-icon>cancel</mat-icon></button>
+        </mat-chip>
+        <mat-chip *ngIf="filterCompany" (removed)="filterCompany = null; applyFilters()">
+          Company: {{ filterCompany }}
+          <button matChipRemove><mat-icon>cancel</mat-icon></button>
+        </mat-chip>
+        <mat-chip *ngIf="filterJobReference" (removed)="filterJobReference = ''; applyFilters()">
+          Job: {{ filterJobReference }}
+          <button matChipRemove><mat-icon>cancel</mat-icon></button>
+        </mat-chip>
+        <mat-chip *ngIf="filterRole" (removed)="filterRole = ''; applyFilters()">
+          Role: {{ filterRole }}
+          <button matChipRemove><mat-icon>cancel</mat-icon></button>
+        </mat-chip>
+      </mat-chip-set>
+    </div>
+  </div>
+
+  <div class="results-info">
+    <p>Showing {{ applications.length }} of {{ totalItems }} application(s)</p>
+  </div>
+
+  <table mat-table [dataSource]="applications" class="mat-elevation-z8" matSort (matSortChange)="onSortChange($event)">
+    <ng-container matColumnDef="candidateName">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Candidate</th>
+      <td mat-cell *matCellDef="let app">
+        <a class="link" (click)="navigateToCandidate(app.candidateId)" 
+           matTooltip="View candidate details">
+          {{ app.candidateName }}
+        </a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="jobReference">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Job Reference</th>
+      <td mat-cell *matCellDef="let app">
+        <a *ngIf="app.jobReference" 
+           class="link" 
+           (click)="navigateToJob(app.jobId)" 
+           matTooltip="View job details">
+          {{ app.jobReference }}
+        </a>
+        <span *ngIf="!app.jobReference" class="spontaneous">Spontaneous</span>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="roleCategory">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Role</th>
+      <td mat-cell *matCellDef="let app">{{ app.roleCategory }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="companyName">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Company</th>
+      <td mat-cell *matCellDef="let app">{{ app.companyName || '-' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="dailyRate">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Daily Rate</th>
+      <td mat-cell *matCellDef="let app">{{ app.dailyRate ? app.dailyRate + ' €' : '-' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="status">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+      <td mat-cell *matCellDef="let app" 
+          [class.approved-status]="app.status === 'APPROVED_FOR_MISSION'">
+        <span class="status-badge" [class.approved]="app.status === 'APPROVED_FOR_MISSION'">
+          {{ getStatusLabel(app.status) }}
+        </span>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="rating">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header="averageRating">Rating</th>
+      <td mat-cell *matCellDef="let app">
+        <div class="rating-display" *ngIf="app.averageRating && app.averageRating > 0">
+          <mat-icon 
+            *ngFor="let star of getStarArray(app.averageRating!)" 
+            [class.filled]="star <= app.averageRating!"
+            [class.half-filled]="star > app.averageRating! && star - 0.5 <= app.averageRating!"
+            class="rating-star"
+            matTooltip="Average rating: {{ app.averageRating | number:'1.1-1' }}/5">
+            {{ star <= app.averageRating! ? 'star' : (star - 0.5 <= app.averageRating! ? 'star_half' : 'star_border') }}
+          </mat-icon>
+          <span class="rating-value">{{ app.averageRating | number:'1.1-1' }}</span>
+        </div>
+        <span *ngIf="!app.averageRating || app.averageRating === 0" class="no-rating">-</span>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="applicationDate">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Date</th>
+      <td mat-cell *matCellDef="let app">{{ app.applicationDate | date:'dd/MM/yyyy' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="comments">
+      <th mat-header-cell *matHeaderCellDef>Comments</th>
+      <td mat-cell *matCellDef="let app">
+        <button 
+          mat-icon-button 
+          color="accent" 
+          (click)="openCommentsDialog(app)"
+          [matBadge]="app.commentCount || 0"
+          [matBadgeHidden]="!app.commentCount"
+          matBadgeColor="warn"
+          matTooltip="View/Add Comments">
+          <mat-icon>comment</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef>Actions</th>
+      <td mat-cell *matCellDef="let app">
+        <button mat-icon-button color="primary" (click)="openEditDialog(app)"
+                matTooltip="Edit">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button color="warn" (click)="deleteApplication(app.id!)"
+                matTooltip="Delete">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
+        [class.approved-row]="row.status === 'APPROVED_FOR_MISSION'"></tr>
+  </table>
+  
+  <!-- Pagination -->
+  <mat-paginator 
+    [length]="totalItems"
+    [pageSize]="pageSize"
+    [pageSizeOptions]="pageSizeOptions"
+    [pageIndex]="currentPage"
+    (page)="onPageChange($event)"
+    showFirstLastButtons>
+  </mat-paginator>
+</div>

@@ -11,6 +11,10 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatExpansionModule } from '@angular/material/expansion';
 import { MatCardModule } from '@angular/material/card';
+import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
+import { MatSelectModule } from '@angular/material/select';
+import { MatSortModule, Sort } from '@angular/material/sort';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { CandidateService } from '../../services/candidate.service';
 import { Candidate } from '../../models/candidate.model';
 import { CandidateDialogComponent } from '../candidate-dialog/candidate-dialog.component';
@@ -29,7 +33,11 @@ import { CandidateDialogComponent } from '../candidate-dialog/candidate-dialog.c
     MatSnackBarModule,
     MatDialogModule,
     MatExpansionModule,
-    MatCardModule
+    MatCardModule,
+    MatPaginatorModule,
+    MatSelectModule,
+    MatSortModule,
+    MatTooltipModule
   ],
   templateUrl: './candidates.component.html',
   styleUrls: ['./candidates.component.css']
@@ -37,9 +45,20 @@ import { CandidateDialogComponent } from '../candidate-dialog/candidate-dialog.c
 export class CandidatesComponent implements OnInit {
   candidates: Candidate[] = [];
   selectedCandidate: Candidate | null = null;
-  displayedColumns: string[] = ['firstName', 'lastName', 'applicationCount', 'actions'];
+  displayedColumns: string[] = ['firstName', 'lastName', 'applicationCount', 'reviewCount', 'averageRating', 'actions'];
   applicationColumns: string[] = ['jobReference', 'roleCategory', 'companyName', 'status', 'applicationDate'];
   searchTerm = '';
+  
+  // Pagination
+  currentPage = 0;
+  pageSize = 100;
+  totalItems = 0;
+  totalPages = 0;
+  pageSizeOptions = [25, 50, 100, 200];
+  
+  // Sorting
+  sortBy = 'lastName';
+  sortDirection: 'asc' | 'desc' = 'asc';
 
   constructor(
     private candidateService: CandidateService,
@@ -61,9 +80,12 @@ export class CandidatesComponent implements OnInit {
   }
 
   loadCandidates(): void {
-    this.candidateService.getAllCandidates().subscribe({
-      next: (data) => {
-        this.candidates = data;
+    this.candidateService.getAllCandidates(this.currentPage, this.pageSize, this.sortBy, this.sortDirection).subscribe({
+      next: (response) => {
+        this.candidates = response.candidates || [];
+        this.currentPage = response.currentPage;
+        this.totalItems = response.totalItems;
+        this.totalPages = response.totalPages;
       },
       error: (error) => {
         this.snackBar.open('Failed to load candidates', 'Close', { duration: 3000 });
@@ -72,10 +94,14 @@ export class CandidatesComponent implements OnInit {
   }
 
   search(): void {
+    this.currentPage = 0; // Reset to first page on new search
     if (this.searchTerm.trim()) {
-      this.candidateService.searchCandidates(this.searchTerm).subscribe({
-        next: (data) => {
-          this.candidates = data;
+      this.candidateService.searchCandidates(this.searchTerm, this.currentPage, this.pageSize, this.sortBy, this.sortDirection).subscribe({
+        next: (response) => {
+          this.candidates = response.candidates || [];
+          this.currentPage = response.currentPage;
+          this.totalItems = response.totalItems;
+          this.totalPages = response.totalPages;
         },
         error: (error) => {
           this.snackBar.open('Search failed', 'Close', { duration: 3000 });
@@ -83,6 +109,29 @@ export class CandidatesComponent implements OnInit {
       });
     } else {
       this.loadCandidates();
+    }
+  }
+  
+  onPageChange(event: PageEvent): void {
+    this.currentPage = event.pageIndex;
+    this.pageSize = event.pageSize;
+    if (this.searchTerm.trim()) {
+      this.search();
+    } else {
+      this.loadCandidates();
+    }
+  }
+  
+  onSortChange(sort: Sort): void {
+    if (sort.direction) {
+      this.sortBy = sort.active;
+      this.sortDirection = sort.direction;
+      this.currentPage = 0; // Reset to first page on sort change
+      if (this.searchTerm.trim()) {
+        this.search();
+      } else {
+        this.loadCandidates();
+      }
     }
   }
 
@@ -189,5 +238,9 @@ export class CandidatesComponent implements OnInit {
       'ON_HOLD': 'On Hold'
     };
     return statusLabels[status] || status;
+  }
+  
+  getStarArray(rating: number): number[] {
+    return [1, 2, 3, 4, 5];
   }
 }

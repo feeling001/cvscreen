@@ -7,6 +7,8 @@ export interface Candidate {
   createdAt?: string;
   updatedAt?: string;
   applicationCount?: number;
+  reviewCount?: number; // Total number of reviews across all applications
+  averageRating?: number; // Average rating across all applications
   applications?: ApplicationSummary[];
 }
 

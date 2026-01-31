@@ -3,8 +3,11 @@ package com.cvscreen.service;
 import com.cvscreen.dto.*;
 import com.cvscreen.entity.Candidate;
 import com.cvscreen.exception.ResourceNotFoundException;
+import com.cvscreen.repository.ApplicationCommentRepository;
 import com.cvscreen.repository.CandidateRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +19,12 @@ import java.util.stream.Collectors;
 public class CandidateService {
     
     private final CandidateRepository candidateRepository;
+    private final ApplicationCommentRepository commentRepository;
+    
+    @Transactional(readOnly = true)
+    public Page<CandidateDTO> getAllCandidatesPaginated(Pageable pageable) {
+        return candidateRepository.findAll(pageable).map(this::convertToDTO);
+    }
     
     @Transactional(readOnly = true)
     public List<CandidateDTO> getAllCandidates() {
@@ -35,6 +44,11 @@ public class CandidateService {
             .collect(Collectors.toList()));
         
         return dto;
+    }
+    
+    @Transactional(readOnly = true)
+    public Page<CandidateDTO> searchCandidatesPaginated(String searchTerm, Pageable pageable) {
+        return candidateRepository.searchByName(searchTerm, pageable).map(this::convertToDTO);
     }
     
     @Transactional(readOnly = true)
@@ -96,6 +110,14 @@ public class CandidateService {
         dto.setCreatedAt(candidate.getCreatedAt());
         dto.setUpdatedAt(candidate.getUpdatedAt());
         dto.setApplicationCount(candidate.getApplications() != null ? candidate.getApplications().size() : 0);
+        
+        // Get review statistics for this candidate
+        long reviewCount = commentRepository.countByCandidateId(candidate.getId());
+        dto.setReviewCount(reviewCount);
+        
+        Double averageRating = commentRepository.getAverageRatingByCandidateId(candidate.getId());
+        dto.setAverageRating(averageRating);
+        
         return dto;
     }
     

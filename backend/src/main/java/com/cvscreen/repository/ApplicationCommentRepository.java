@@ -31,7 +31,15 @@ public interface ApplicationCommentRepository extends JpaRepository<ApplicationC
     
     long countByApplicationId(Long applicationId);
     
+    @Query("SELECT COUNT(ac) FROM ApplicationComment ac " +
+           "WHERE ac.application.candidate.id = :candidateId")
+    long countByCandidateId(@Param("candidateId") Long candidateId);
+    
     @Query("SELECT COALESCE(AVG(ac.rating), 0.0) FROM ApplicationComment ac " +
            "WHERE ac.application.id = :applicationId AND ac.rating IS NOT NULL")
     Double getAverageRatingByApplicationId(@Param("applicationId") Long applicationId);
+    
+    @Query("SELECT COALESCE(AVG(ac.rating), 0.0) FROM ApplicationComment ac " +
+           "WHERE ac.application.candidate.id = :candidateId AND ac.rating IS NOT NULL")
+    Double getAverageRatingByCandidateId(@Param("candidateId") Long candidateId);
 }

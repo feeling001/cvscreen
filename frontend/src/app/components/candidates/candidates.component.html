@@ -18,20 +18,43 @@
     </button>
   </div>
 
-  <table mat-table [dataSource]="candidates" class="mat-elevation-z8">
+  <table mat-table [dataSource]="candidates" class="mat-elevation-z8" matSort (matSortChange)="onSortChange($event)">
     <ng-container matColumnDef="firstName">
-      <th mat-header-cell *matHeaderCellDef>First Name</th>
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>First Name</th>
       <td mat-cell *matCellDef="let candidate">{{ candidate.firstName }}</td>
     </ng-container>
 
     <ng-container matColumnDef="lastName">
-      <th mat-header-cell *matHeaderCellDef>Last Name</th>
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Last Name</th>
       <td mat-cell *matCellDef="let candidate">{{ candidate.lastName }}</td>
     </ng-container>
 
     <ng-container matColumnDef="applicationCount">
-      <th mat-header-cell *matHeaderCellDef>Applications</th>
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Applications</th>
       <td mat-cell *matCellDef="let candidate">{{ candidate.applicationCount || 0 }}</td>
+    </ng-container>
+    
+    <ng-container matColumnDef="reviewCount">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Reviews</th>
+      <td mat-cell *matCellDef="let candidate">{{ candidate.reviewCount || 0 }}</td>
+    </ng-container>
+    
+    <ng-container matColumnDef="averageRating">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Avg Rating</th>
+      <td mat-cell *matCellDef="let candidate">
+        <div class="rating-display" *ngIf="candidate.averageRating && candidate.averageRating > 0">
+          <mat-icon 
+            *ngFor="let star of getStarArray(candidate.averageRating!)" 
+            [class.filled]="star <= candidate.averageRating!"
+            [class.half-filled]="star > candidate.averageRating! && star - 0.5 <= candidate.averageRating!"
+            class="rating-star"
+            matTooltip="Average rating: {{ candidate.averageRating | number:'1.1-1' }}/5">
+            {{ star <= candidate.averageRating! ? 'star' : (star - 0.5 <= candidate.averageRating! ? 'star_half' : 'star_border') }}
+          </mat-icon>
+          <span class="rating-value">{{ candidate.averageRating | number:'1.1-1' }}</span>
+        </div>
+        <span *ngIf="!candidate.averageRating || candidate.averageRating === 0" class="no-rating">-</span>
+      </td>
     </ng-container>
 
     <ng-container matColumnDef="actions">
@@ -55,6 +78,16 @@
     <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
     <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
   </table>
+  
+  <!-- Pagination -->
+  <mat-paginator 
+    [length]="totalItems"
+    [pageSize]="pageSize"
+    [pageSizeOptions]="pageSizeOptions"
+    [pageIndex]="currentPage"
+    (page)="onPageChange($event)"
+    showFirstLastButtons>
+  </mat-paginator>
 
   <!-- Candidate Details Section -->
   <div id="candidate-details" *ngIf="selectedCandidate" class="details-section">
@@ -78,6 +111,20 @@
           <h3>General Information</h3>
           <p><strong>Full Name:</strong> {{ selectedCandidate.fullName }}</p>
           <p><strong>Total Applications:</strong> {{ selectedCandidate.applicationCount || 0 }}</p>
+          <p><strong>Total Reviews:</strong> {{ selectedCandidate.reviewCount || 0 }}</p>
+          <p *ngIf="selectedCandidate.averageRating && selectedCandidate.averageRating > 0">
+            <strong>Average Rating:</strong> 
+            <span class="inline-rating">
+              <mat-icon 
+                *ngFor="let star of getStarArray(selectedCandidate.averageRating!)" 
+                [class.filled]="star <= selectedCandidate.averageRating!"
+                [class.half-filled]="star > selectedCandidate.averageRating! && star - 0.5 <= selectedCandidate.averageRating!"
+                class="rating-star">
+                {{ star <= selectedCandidate.averageRating! ? 'star' : (star - 0.5 <= selectedCandidate.averageRating! ? 'star_half' : 'star_border') }}
+              </mat-icon>
+              {{ selectedCandidate.averageRating | number:'1.1-1' }}/5
+            </span>
+          </p>
           <p *ngIf="selectedCandidate.globalNotes">
             <strong>Global Notes:</strong><br>
             {{ selectedCandidate.globalNotes }}

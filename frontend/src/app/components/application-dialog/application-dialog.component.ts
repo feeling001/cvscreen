@@ -165,7 +165,8 @@ export class ApplicationDialogComponent implements OnInit {
   }
 
   loadCandidates(): void {
-    this.candidateService.getAllCandidates().subscribe({
+    // Utiliser la nouvelle méthode getAllCandidatesSimple() au lieu de getAllCandidates()
+    this.candidateService.getAllCandidatesSimple().subscribe({
       next: (data) => {
         this.candidates = data;
       },

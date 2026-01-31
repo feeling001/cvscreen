@@ -28,6 +28,46 @@ table {
   width: 100%;
 }
 
+/* Rating Display */
+.rating-display {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rating-star {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: #ccc;
+}
+
+.rating-star.filled {
+  color: #ff9800;
+}
+
+.rating-star.half-filled {
+  color: #ffb74d;
+}
+
+.rating-value {
+  font-size: 12px;
+  color: #666;
+  margin-left: 4px;
+  font-weight: 500;
+}
+
+.no-rating {
+  color: #999;
+}
+
+.inline-rating {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+}
+
 /* Candidate Details Section */
 .details-section {
   margin-top: 32px;

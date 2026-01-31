@@ -1,8 +1,17 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { map } from 'rxjs/operators';
 import { Candidate } from '../models/candidate.model';
 import { environment } from '../../environments/environment';
+
+export interface PaginatedResponse<T> {
+  candidates?: T[];
+  applications?: T[];
+  currentPage: number;
+  totalItems: number;
+  totalPages: number;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -12,17 +21,52 @@ export class CandidateService {
 
   constructor(private http: HttpClient) {}
 
-  getAllCandidates(): Observable<Candidate[]> {
-    return this.http.get<Candidate[]>(this.API_URL);
+  getAllCandidates(
+    page: number = 0,
+    size: number = 100,
+    sortBy: string = 'lastName',
+    sortDirection: string = 'asc'
+  ): Observable<PaginatedResponse<Candidate>> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString())
+      .set('sortBy', sortBy)
+      .set('sortDirection', sortDirection);
+    
+    return this.http.get<PaginatedResponse<Candidate>>(this.API_URL, { params });
+  }
+  
+  // Méthode pour obtenir tous les candidats sans pagination (pour les dialogues)
+  getAllCandidatesSimple(): Observable<Candidate[]> {
+    const params = new HttpParams()
+      .set('page', '0')
+      .set('size', '10000') // Grande taille pour obtenir tous les candidats
+      .set('sortBy', 'lastName')
+      .set('sortDirection', 'asc');
+    
+    return this.http.get<PaginatedResponse<Candidate>>(this.API_URL, { params })
+      .pipe(map(response => response.candidates || []));
   }
 
   getCandidateById(id: number): Observable<Candidate> {
     return this.http.get<Candidate>(`${this.API_URL}/${id}`);
   }
 
-  searchCandidates(searchTerm: string): Observable<Candidate[]> {
-    const params = new HttpParams().set('q', searchTerm);
-    return this.http.get<Candidate[]>(`${this.API_URL}/search`, { params });
+  searchCandidates(
+    searchTerm: string,
+    page: number = 0,
+    size: number = 100,
+    sortBy: string = 'lastName',
+    sortDirection: string = 'asc'
+  ): Observable<PaginatedResponse<Candidate>> {
+    const params = new HttpParams()
+      .set('q', searchTerm)
+      .set('page', page.toString())
+      .set('size', size.toString())
+      .set('sortBy', sortBy)
+      .set('sortDirection', sortDirection);
+    
+    return this.http.get<PaginatedResponse<Candidate>>(`${this.API_URL}/search`, { params });
   }
 
   createCandidate(candidate: Partial<Candidate>): Observable<Candidate> {

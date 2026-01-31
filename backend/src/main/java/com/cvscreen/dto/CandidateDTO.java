@@ -19,5 +19,7 @@ public class CandidateDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private Integer applicationCount;
+    private Long reviewCount; // Total number of reviews across all applications
+    private Double averageRating; // Average rating across all applications
     private List<ApplicationSummaryDTO> applications;
 }
