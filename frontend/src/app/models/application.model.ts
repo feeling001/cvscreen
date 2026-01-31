@@ -15,6 +15,8 @@ export interface Application {
   evaluationNotes?: string;
   cvFilePath?: string;
   hasReviews?: boolean;
+  commentCount?: number;
+  averageRating?: number; // Average rating from comments (1-5 stars)
   createdAt?: string;
   updatedAt?: string;
 }

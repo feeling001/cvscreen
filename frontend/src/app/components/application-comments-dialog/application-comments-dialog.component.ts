@@ -10,6 +10,8 @@ import { MatListModule } from '@angular/material/list';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatTooltipModule } from '@angular/material/tooltip';
 import { ApplicationCommentService } from '../../services/application-comment.service';
 import { ApplicationComment } from '../../models/application-comment.model';
 
@@ -27,7 +29,9 @@ import { ApplicationComment } from '../../models/application-comment.model';
     MatListModule,
     MatDividerModule,
     MatProgressSpinnerModule,
-    MatSnackBarModule
+    MatSnackBarModule,
+    MatChipsModule,
+    MatTooltipModule
   ],
   template: `
     <h2 mat-dialog-title>
@@ -49,6 +53,28 @@ import { ApplicationComment } from '../../models/application-comment.model';
           </textarea>
         </mat-form-field>
         
+        <div class="rating-section">
+          <label>Rating (optional):</label>
+          <div class="stars">
+            <mat-icon 
+              *ngFor="let star of [1, 2, 3, 4, 5]" 
+              (click)="setRating(star)"
+              [class.filled]="star <= newRating"
+              [class.clickable]="!loading"
+              matTooltip="{{ star }} star{{ star > 1 ? 's' : '' }}">
+              {{ star <= newRating ? 'star' : 'star_border' }}
+            </mat-icon>
+            <button 
+              mat-icon-button 
+              *ngIf="newRating" 
+              (click)="clearRating()"
+              matTooltip="Clear rating"
+              [disabled]="loading">
+              <mat-icon>clear</mat-icon>
+            </button>
+          </div>
+        </div>
+        
         <button 
           mat-raised-button 
           color="primary" 
@@ -63,7 +89,7 @@ import { ApplicationComment } from '../../models/application-comment.model';
       
       <!-- Comments List -->
       <div class="comments-section">
-        <h3>Comments ({{ comments.length }})</h3>
+        <h3>All Comments for Candidate ({{ comments.length }})</h3>
         
         <div *ngIf="loading" class="loading-container">
           <mat-spinner diameter="40"></mat-spinner>
@@ -81,10 +107,31 @@ import { ApplicationComment } from '../../models/application-comment.model';
                 <div class="comment-author">
                   <mat-icon>person</mat-icon>
                   <strong>{{ comment.displayName || comment.username }}</strong>
+                  
+                  <!-- Application context indicator -->
+                  <mat-chip 
+                    *ngIf="comment.currentApplication" 
+                    class="current-app-chip"
+                    matTooltip="Comment on this application">
+                    Current Application
+                  </mat-chip>
+                  <mat-chip 
+                    *ngIf="!comment.currentApplication && comment.jobReference" 
+                    class="other-app-chip"
+                    matTooltip="Comment on another application">
+                    {{ comment.jobReference }} - {{ comment.roleCategory }}
+                  </mat-chip>
+                  <mat-chip 
+                    *ngIf="!comment.currentApplication && !comment.jobReference" 
+                    class="other-app-chip"
+                    matTooltip="Comment on spontaneous application">
+                    Spontaneous - {{ comment.roleCategory }}
+                  </mat-chip>
                 </div>
                 <div class="comment-actions">
                   <span class="comment-date">{{ comment.createdAt | date:'short' }}</span>
                   <button 
+                    *ngIf="comment.currentApplication"
                     mat-icon-button 
                     color="warn" 
                     (click)="deleteComment(comment.id!)"
@@ -93,6 +140,18 @@ import { ApplicationComment } from '../../models/application-comment.model';
                   </button>
                 </div>
               </div>
+              
+              <!-- Rating display -->
+              <div class="comment-rating" *ngIf="comment.rating">
+                <mat-icon 
+                  *ngFor="let star of [1, 2, 3, 4, 5]"
+                  [class.filled]="star <= comment.rating!"
+                  class="small-star">
+                  {{ star <= comment.rating! ? 'star' : 'star_border' }}
+                </mat-icon>
+                <span class="rating-text">({{ comment.rating }}/5)</span>
+              </div>
+              
               <p class="comment-text">{{ comment.comment }}</p>
             </div>
             <mat-divider></mat-divider>
@@ -107,8 +166,8 @@ import { ApplicationComment } from '../../models/application-comment.model';
   `,
   styles: [`
     mat-dialog-content {
-      min-width: 600px;
-      max-height: 70vh;
+      min-width: 700px;
+      max-height: 75vh;
     }
     
     .add-comment-section {
@@ -117,6 +176,43 @@ import { ApplicationComment } from '../../models/application-comment.model';
     
     .full-width {
       width: 100%;
+    }
+    
+    .rating-section {
+      margin: 16px 0;
+    }
+    
+    .rating-section label {
+      display: block;
+      margin-bottom: 8px;
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .stars {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    
+    .stars mat-icon {
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+      color: #ccc;
+      transition: color 0.2s;
+    }
+    
+    .stars mat-icon.clickable {
+      cursor: pointer;
+    }
+    
+    .stars mat-icon.clickable:hover {
+      color: #ffa726;
+    }
+    
+    .stars mat-icon.filled {
+      color: #ff9800;
     }
     
     .divider {
@@ -168,12 +264,27 @@ import { ApplicationComment } from '../../models/application-comment.model';
       display: flex;
       align-items: center;
       gap: 8px;
+      flex-wrap: wrap;
     }
     
     .comment-author mat-icon {
       font-size: 20px;
       width: 20px;
       height: 20px;
+    }
+    
+    .current-app-chip {
+      background-color: #4caf50 !important;
+      color: white !important;
+      font-size: 11px;
+      height: 24px;
+    }
+    
+    .other-app-chip {
+      background-color: #2196f3 !important;
+      color: white !important;
+      font-size: 11px;
+      height: 24px;
     }
     
     .comment-actions {
@@ -187,6 +298,31 @@ import { ApplicationComment } from '../../models/application-comment.model';
       color: #757575;
     }
     
+    .comment-rating {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      margin: 8px 0;
+      padding-left: 28px;
+    }
+    
+    .comment-rating .small-star {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #ccc;
+    }
+    
+    .comment-rating .small-star.filled {
+      color: #ff9800;
+    }
+    
+    .rating-text {
+      font-size: 12px;
+      color: #666;
+      margin-left: 4px;
+    }
+    
     .comment-text {
       margin: 0;
       padding-left: 28px;
@@ -198,6 +334,7 @@ import { ApplicationComment } from '../../models/application-comment.model';
 export class ApplicationCommentsDialogComponent implements OnInit {
   comments: ApplicationComment[] = [];
   newComment = '';
+  newRating: number = 0;
   loading = false;
 
   constructor(
@@ -213,7 +350,7 @@ export class ApplicationCommentsDialogComponent implements OnInit {
 
   loadComments(): void {
     this.loading = true;
-    this.commentService.getComments(this.data.applicationId).subscribe({
+    this.commentService.getAllCandidateComments(this.data.applicationId).subscribe({
       next: (comments) => {
         this.comments = comments;
         this.loading = false;
@@ -225,16 +362,30 @@ export class ApplicationCommentsDialogComponent implements OnInit {
     });
   }
 
+  setRating(rating: number): void {
+    if (!this.loading) {
+      this.newRating = rating;
+    }
+  }
+
+  clearRating(): void {
+    this.newRating = 0;
+  }
+
   addComment(): void {
     if (!this.newComment.trim()) {
       return;
     }
 
     this.loading = true;
-    this.commentService.addComment(this.data.applicationId, this.newComment.trim()).subscribe({
+    const rating = this.newRating > 0 ? this.newRating : undefined;
+    
+    this.commentService.addComment(this.data.applicationId, this.newComment.trim(), rating).subscribe({
       next: (comment) => {
+        // Add to the beginning of the list
         this.comments.unshift(comment);
         this.newComment = '';
+        this.newRating = 0;
         this.snackBar.open('Comment added successfully', 'Close', { duration: 2000 });
         this.loading = false;
       },

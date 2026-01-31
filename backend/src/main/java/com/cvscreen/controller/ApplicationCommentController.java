@@ -25,6 +25,11 @@ public class ApplicationCommentController {
         return ResponseEntity.ok(commentService.getCommentsForApplication(applicationId));
     }
     
+    @GetMapping("/all-candidate-comments")
+    public ResponseEntity<List<ApplicationCommentDTO>> getAllCandidateComments(@PathVariable Long applicationId) {
+        return ResponseEntity.ok(commentService.getAllCommentsForCandidate(applicationId));
+    }
+    
     @PostMapping
     public ResponseEntity<ApplicationCommentDTO> createComment(
             @PathVariable Long applicationId,

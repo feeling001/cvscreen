@@ -26,8 +26,26 @@ public class ApplicationCommentService {
     
     @Transactional(readOnly = true)
     public List<ApplicationCommentDTO> getCommentsForApplication(Long applicationId) {
-        return commentRepository.findByApplicationIdWithUser(applicationId).stream()
-            .map(this::convertToDTO)
+        List<ApplicationComment> comments = commentRepository.findByApplicationIdWithUser(applicationId);
+        return comments.stream()
+            .map(comment -> convertToDTO(comment, true))
+            .collect(Collectors.toList());
+    }
+    
+    @Transactional(readOnly = true)
+    public List<ApplicationCommentDTO> getAllCommentsForCandidate(Long applicationId) {
+        Application application = applicationRepository.findById(applicationId)
+            .orElseThrow(() -> new ResourceNotFoundException("Application not found with id: " + applicationId));
+        
+        Long candidateId = application.getCandidate().getId();
+        
+        List<ApplicationComment> allComments = commentRepository.findByCandidateIdWithDetails(candidateId);
+        
+        return allComments.stream()
+            .map(comment -> {
+                boolean isCurrent = comment.getApplication().getId().equals(applicationId);
+                return convertToDTO(comment, isCurrent);
+            })
             .collect(Collectors.toList());
     }
     
@@ -43,9 +61,10 @@ public class ApplicationCommentService {
         comment.setApplication(application);
         comment.setUser(user);
         comment.setComment(request.getComment());
+        comment.setRating(request.getRating());
         
         comment = commentRepository.save(comment);
-        return convertToDTO(comment);
+        return convertToDTO(comment, true);
     }
     
     @Transactional
@@ -61,7 +80,12 @@ public class ApplicationCommentService {
         return commentRepository.countByApplicationId(applicationId);
     }
     
-    private ApplicationCommentDTO convertToDTO(ApplicationComment comment) {
+    @Transactional(readOnly = true)
+    public Double getAverageRatingForApplication(Long applicationId) {
+        return commentRepository.getAverageRatingByApplicationId(applicationId);
+    }
+    
+    private ApplicationCommentDTO convertToDTO(ApplicationComment comment, boolean isCurrentApplication) {
         ApplicationCommentDTO dto = new ApplicationCommentDTO();
         dto.setId(comment.getId());
         dto.setApplicationId(comment.getApplication().getId());
@@ -69,7 +93,16 @@ public class ApplicationCommentService {
         dto.setUsername(comment.getUser().getUsername());
         dto.setDisplayName(comment.getUser().getDisplayName());
         dto.setComment(comment.getComment());
+        dto.setRating(comment.getRating());
         dto.setCreatedAt(comment.getCreatedAt());
+        dto.setCurrentApplication(isCurrentApplication); // Fixed: use setCurrentApplication instead of setIsCurrentApplication
+        
+        // Add job reference and role category for context
+        if (comment.getApplication().getJob() != null) {
+            dto.setJobReference(comment.getApplication().getJob().getReference());
+        }
+        dto.setRoleCategory(comment.getApplication().getRoleCategory());
+        
         return dto;
     }
 }

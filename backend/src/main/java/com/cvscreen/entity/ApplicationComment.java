@@ -29,6 +29,9 @@ public class ApplicationComment {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String comment;
     
+    @Column(name = "rating")
+    private Integer rating; // Rating from 1 to 5 stars
+    
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     

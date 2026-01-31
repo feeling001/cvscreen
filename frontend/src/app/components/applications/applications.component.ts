@@ -187,6 +187,24 @@ import { ApplicationCommentsDialogComponent } from '../application-comments-dial
           </td>
         </ng-container>
 
+        <ng-container matColumnDef="rating">
+          <th mat-header-cell *matHeaderCellDef>Rating</th>
+          <td mat-cell *matCellDef="let app">
+            <div class="rating-display" *ngIf="app.averageRating && app.averageRating > 0">
+              <mat-icon 
+                *ngFor="let star of getStarArray(app.averageRating!)" 
+                [class.filled]="star <= app.averageRating!"
+                [class.half-filled]="star > app.averageRating! && star - 0.5 <= app.averageRating!"
+                class="rating-star"
+                matTooltip="Average rating: {{ app.averageRating | number:'1.1-1' }}/5">
+                {{ star <= app.averageRating! ? 'star' : (star - 0.5 <= app.averageRating! ? 'star_half' : 'star_border') }}
+              </mat-icon>
+              <span class="rating-value">{{ app.averageRating | number:'1.1-1' }}</span>
+            </div>
+            <span *ngIf="!app.averageRating || app.averageRating === 0" class="no-rating">-</span>
+          </td>
+        </ng-container>
+
         <ng-container matColumnDef="applicationDate">
           <th mat-header-cell *matHeaderCellDef>Date</th>
           <td mat-cell *matCellDef="let app">{{ app.applicationDate | date:'dd/MM/yyyy' }}</td>
@@ -340,12 +358,44 @@ import { ApplicationCommentsDialogComponent } from '../application-comments-dial
       color: #999;
       font-style: italic;
     }
+
+    .rating-display {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .rating-star {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+      color: #ccc;
+    }
+
+    .rating-star.filled {
+      color: #ff9800;
+    }
+
+    .rating-star.half-filled {
+      color: #ffb74d;
+    }
+
+    .rating-value {
+      font-size: 12px;
+      color: #666;
+      margin-left: 4px;
+      font-weight: 500;
+    }
+
+    .no-rating {
+      color: #999;
+    }
   `]
 })
 export class ApplicationsComponent implements OnInit {
   applications: Application[] = [];
   companies: any[] = [];
-  displayedColumns: string[] = ['candidateName', 'jobReference', 'roleCategory', 'companyName', 'dailyRate', 'status', 'applicationDate', 'comments', 'actions'];
+  displayedColumns: string[] = ['candidateName', 'jobReference', 'roleCategory', 'companyName', 'dailyRate', 'status', 'rating', 'applicationDate', 'comments', 'actions'];
   
   searchTerm = '';
   filterStatus: string | null = null;
@@ -365,7 +415,6 @@ export class ApplicationsComponent implements OnInit {
   ngOnInit(): void {
     this.loadCompanies();
     
-    // Check for query parameters (from navigation)
     this.route.queryParams.subscribe(params => {
       const jobReference = params['jobReference'];
       const companyName = params['companyName'];
@@ -452,7 +501,6 @@ export class ApplicationsComponent implements OnInit {
     this.filterJobReference = '';
     this.filterRole = '';
     
-    // Clear query params
     this.router.navigate([], {
       relativeTo: this.route,
       queryParams: {}
@@ -478,6 +526,10 @@ export class ApplicationsComponent implements OnInit {
     return statusLabels[status] || status;
   }
 
+  getStarArray(rating: number): number[] {
+    return [1, 2, 3, 4, 5];
+  }
+
   navigateToCandidate(candidateId: number): void {
     if (candidateId) {
       this.router.navigate(['/dashboard/candidates'], { 
@@ -496,7 +548,7 @@ export class ApplicationsComponent implements OnInit {
 
   openCommentsDialog(application: Application): void {
     const dialogRef = this.dialog.open(ApplicationCommentsDialogComponent, {
-      width: '700px',
+      width: '800px',
       data: { applicationId: application.id }
     });
 

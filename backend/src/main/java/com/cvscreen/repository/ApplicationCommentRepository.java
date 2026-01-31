@@ -21,5 +21,17 @@ public interface ApplicationCommentRepository extends JpaRepository<ApplicationC
            "ORDER BY ac.createdAt DESC")
     List<ApplicationComment> findByApplicationIdWithUser(@Param("applicationId") Long applicationId);
     
+    @Query("SELECT ac FROM ApplicationComment ac " +
+           "LEFT JOIN FETCH ac.user " +
+           "LEFT JOIN FETCH ac.application a " +
+           "LEFT JOIN FETCH a.job " +
+           "WHERE a.candidate.id = :candidateId " +
+           "ORDER BY ac.createdAt DESC")
+    List<ApplicationComment> findByCandidateIdWithDetails(@Param("candidateId") Long candidateId);
+    
     long countByApplicationId(Long applicationId);
+    
+    @Query("SELECT COALESCE(AVG(ac.rating), 0.0) FROM ApplicationComment ac " +
+           "WHERE ac.application.id = :applicationId AND ac.rating IS NOT NULL")
+    Double getAverageRatingByApplicationId(@Param("applicationId") Long applicationId);
 }

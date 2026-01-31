@@ -16,10 +16,14 @@ export class ApplicationCommentService {
     return this.http.get<ApplicationComment[]>(`${this.API_URL}/${applicationId}/comments`);
   }
 
-  addComment(applicationId: number, comment: string): Observable<ApplicationComment> {
+  getAllCandidateComments(applicationId: number): Observable<ApplicationComment[]> {
+    return this.http.get<ApplicationComment[]>(`${this.API_URL}/${applicationId}/comments/all-candidate-comments`);
+  }
+
+  addComment(applicationId: number, comment: string, rating?: number): Observable<ApplicationComment> {
     return this.http.post<ApplicationComment>(
       `${this.API_URL}/${applicationId}/comments`,
-      { comment }
+      { comment, rating }
     );
   }
 

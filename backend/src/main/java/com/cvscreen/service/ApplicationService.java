@@ -209,9 +209,12 @@ public class ApplicationService {
         dto.setCreatedAt(application.getCreatedAt());
         dto.setUpdatedAt(application.getUpdatedAt());
         
-        // Get comment count for this application
+        // Get comment count and average rating for this application
         long commentCount = commentRepository.countByApplicationId(application.getId());
         dto.setCommentCount(commentCount);
+        
+        Double averageRating = commentRepository.getAverageRatingByApplicationId(application.getId());
+        dto.setAverageRating(averageRating);
         
         return dto;
     }

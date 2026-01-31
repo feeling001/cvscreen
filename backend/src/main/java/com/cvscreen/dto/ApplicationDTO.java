@@ -28,6 +28,7 @@ public class ApplicationDTO {
     private String evaluationNotes;
     private String cvFilePath;
     private Long commentCount;
+    private Double averageRating; // Average rating from comments (1-5 stars)
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }
