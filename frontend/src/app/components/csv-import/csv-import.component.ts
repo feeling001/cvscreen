@@ -64,22 +64,23 @@ interface ImportResult {
 
               <h4>Columns (in order):</h4>
               <ol>
-                <li><strong>Date</strong> - Application date (dd/MM/yyyy) - <em>Required</em></li>
-                <li><strong>Canal</strong> - Source/channel (e.g., Pro-Unity) - <em>Optional</em></li>
-                <li><strong>Demande</strong> - Job reference (e.g., I01234) - <em>Optional</em></li>
-                <li><strong>Fonction</strong> - Role/Category - <em>Required</em></li>
-                <li><strong>NOM - Prenom</strong> - Format: "LASTNAME - Firstname" - <em>Required</em></li>
-                <li><strong>Linkedin</strong> - LinkedIn profile URL - <em>Optional</em></li>
-                <li><strong>Supplier</strong> - Consulting company name - <em>Optional</em></li>
-                <li><strong>Reviewer - Avis CV 1</strong> - First CV review - <em>Optional</em></li>
-                <li><strong>Reviewer - Avis CV 2</strong> - Second CV review - <em>Optional</em></li>
-                <li><strong>Reviewer - Avis interview</strong> - Interview feedback - <em>Optional</em></li>
+                <li><strong>application_date</strong> - Application date (dd/MM/yyyy) - <em>Required</em></li>
+                <li><strong>job_reference</strong> - Job reference (e.g., I09526) - <em>Optional</em></li>
+                <li><strong>role_category</strong> - Role/Category - <em>Required</em></li>
+                <li><strong>candidate_name</strong> - Candidate last name - <em>Required</em></li>
+                <li><strong>helper</strong> - Helper field (ignored) - <em>Optional</em></li>
+                <li><strong>candidate_first_name</strong> - Candidate first name - <em>Required</em></li>
+                <li><strong>company_name</strong> - Consulting company name - <em>Optional</em></li>
+                <li><strong>daily_rate</strong> - Daily rate in euros - <em>Optional</em></li>
+                <li><strong>evaluation_notes</strong> - Evaluation notes - <em>Optional</em></li>
+                <li><strong>conclusion</strong> - Conclusion (0/NOK=rejected, 1/OK=approved) - <em>Optional</em></li>
               </ol>
 
               <h4>Example:</h4>
               <div class="code-block">
-                Date;Canal;Demande;Fonction;NOM - Prenom;Linkedin;Supplier;Reviewer - Avis CV 1;Reviewer - Avis CV 2;Reviewer - Avis interview<br>
-                15/01/2024;Pro-Unity;I01234;System Architect;DUPONT - Jean;https://linkedin.com/in/jean-dupont;Accenture;Good profile;Strong skills;Excellent
+                application_date;job_reference;role_category;candidate_name;helper;candidate_first_name;company_name;daily_rate;evaluation_notes;conclusion<br>
+                19/01/2025;I09526;Full Stack Senior Dev;De Roose;p;Antoine;Extia;595;Good profile;1<br>
+                19/01/2025;I09526;Full Stack Senior Dev;D'Hondt;p;Joachim;;680;Job Hopper;NOK
               </div>
 
               <button mat-raised-button color="primary" (click)="downloadTemplate()">
@@ -232,10 +233,11 @@ interface ImportResult {
       padding: 12px;
       border-radius: 4px;
       font-family: 'Courier New', monospace;
-      font-size: 12px;
+      font-size: 11px;
       overflow-x: auto;
       margin: 12px 0;
       border: 1px solid #ddd;
+      line-height: 1.6;
     }
 
     .upload-section {
@@ -374,7 +376,7 @@ export class CsvImportComponent {
     this.importResult = null;
 
     this.http.post<ImportResult>(
-      `${environment.apiUrl}/import/enhanced-csv`,
+      `${environment.apiUrl}/import/csv`,
       formData
     ).subscribe({
       next: (result) => {
@@ -417,10 +419,15 @@ export class CsvImportComponent {
   }
 
   downloadTemplate(): void {
-    const template = `Date;Canal;Demande;Fonction;NOM - Prenom;Linkedin;Supplier;Reviewer - Avis CV 1;Reviewer - Avis CV 2;Reviewer - Avis interview
-15/01/2024;Pro-Unity;I01234;System Architect;DUPONT - Jean;https://linkedin.com/in/jean-dupont;Accenture;Good profile;Strong skills;Excellent
-16/01/2024;Pro-Unity;I01234;Developer;MARTIN - Sophie;https://linkedin.com/in/sophie-martin;Capgemini;Strong Java developer;Good Spring Boot knowledge;Passed interview
-17/01/2024;Internal;;Project Manager;BERNARD - Pierre;;Sopra Steria;Experienced PM;Good organizational skills;`;
+    const template = `application_date;job_reference;role_category;candidate_name;helper;candidate_first_name;company_name;daily_rate;evaluation_notes;conclusion
+19/01/2025;I09526;Full Stack Senior Dev;De Roose;p;Antoine;Extia;595;Philippe Massaert Ne semble pas senior;0
+19/01/2025;I09526;Full Stack Senior Dev;D'Hondt;p;Joachim;;680;Philippe Massaert Job Hopper - NOK;NOK
+20/01/2025;I09527;Java Developer;Martin;x;Sophie;Accenture;620;Good technical skills;1
+21/01/2025;;Project Manager;Bernard;;Pierre;Sopra Steria;550;Experienced PM;OK
+22/01/2025;I09528;DevOps Engineer;Dubois;t;Marie;Capgemini;640;Strong Kubernetes experience;Approved
+23/01/2025;I09529;Business Analyst;Leroy;m;Thomas;CGI;500;Junior but motivated;Maybe
+24/01/2025;I09526;Full Stack Senior Dev;Moreau;p;Julie;Atos;610;Good technical profile;
+25/01/2025;;Frontend Developer;Petit;x;Lucas;;580;Spontaneous - Excellent React portfolio;1`;
 
     const blob = new Blob([template], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
