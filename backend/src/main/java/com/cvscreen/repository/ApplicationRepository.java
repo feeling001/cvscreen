@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ApplicationRepository extends JpaRepository<Application, Long>, JpaSpecificationExecutor<Application> {
@@ -19,4 +20,8 @@ public interface ApplicationRepository extends JpaRepository<Application, Long>,
     List<Application> findByStatus(Application.ApplicationStatus status);
     
     List<Application> findByRoleCategoryIgnoreCase(String roleCategory);
+    
+    boolean existsByExternalId(String externalId);
+    
+    Optional<Application> findByExternalId(String externalId);
 }

@@ -46,6 +46,9 @@ public class Application {
     @Column(name = "cv_file_path", length = 500)
     private String cvFilePath;
     
+    @Column(name = "external_id", unique = true, length = 255)
+    private String externalId;
+    
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 50)
     private ApplicationStatus status = ApplicationStatus.CV_RECEIVED;
