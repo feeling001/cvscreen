@@ -30,6 +30,7 @@ public class ProUnityImportService {
     private final CandidateService candidateService;
     private final JobService jobService;
     private final CompanyService companyService;
+    private final NameSplitterService nameSplitterService;
     private final ObjectMapper objectMapper;
     
     @Transactional
@@ -40,10 +41,13 @@ public class ProUnityImportService {
             // Parse JSON
             JsonNode rootNode = objectMapper.readTree(file.getInputStream());
             
+            // Navigate to jobPost object (handle both {"jobPost": {...}} and direct {...} formats)
+            JsonNode jobPostNode = rootNode.has("jobPost") ? rootNode.get("jobPost") : rootNode;
+            
             // Extract job information
-            String jobReference = rootNode.path("projectCode").asText();
-            String jobTitle = rootNode.path("name").asText();
-            String companyName = rootNode.path("department").path("name").asText();
+            String jobReference = jobPostNode.path("projectCode").asText();
+            String jobTitle = jobPostNode.path("name").asText();
+            String companyName = jobPostNode.path("department").path("name").asText();
             
             log.info("Importing candidates for job: {} - {}", jobReference, jobTitle);
             
@@ -60,16 +64,20 @@ public class ProUnityImportService {
             }
             
             // Process candidates
-            JsonNode candidatesNode = rootNode.path("candidates");
+            JsonNode candidatesNode = jobPostNode.path("candidates");
             if (candidatesNode.isArray()) {
+                int candidateIndex = 0;
                 for (JsonNode candidateNode : candidatesNode) {
+                    candidateIndex++;
                     try {
-                        importCandidate(candidateNode, job, company, result);
+                        importCandidate(candidateNode, job, company, result, candidateIndex);
                     } catch (Exception e) {
-                        log.error("Failed to import candidate: {}", e.getMessage(), e);
-                        result.addError(0, "Failed to import candidate: " + e.getMessage());
+                        log.error("Failed to import candidate #{}: {}", candidateIndex, e.getMessage(), e);
+                        result.addError(candidateIndex, "Failed to import candidate: " + e.getMessage());
                     }
                 }
+            } else {
+                log.warn("No candidates array found in JSON");
             }
             
             log.info("Import completed. Success: {}, Skipped: {}, Failed: {}", 
@@ -83,32 +91,45 @@ public class ProUnityImportService {
         return result;
     }
     
-    private void importCandidate(JsonNode candidateNode, Job job, Company company, ImportResult result) {
+    private void importCandidate(JsonNode candidateNode, Job job, Company company, ImportResult result, int index) {
         // Extract Pro-Unity UUID
         String externalId = candidateNode.path("id").asText();
         
+        log.debug("Processing candidate #{} with external ID: {}", index, externalId);
+        
         // Check if application already exists
-        if (applicationRepository.existsByExternalId(externalId)) {
+        if (externalId != null && !externalId.isEmpty() && applicationRepository.existsByExternalId(externalId)) {
             log.debug("Application with external ID {} already exists, skipping", externalId);
             result.incrementSkippedCount();
             return;
         }
         
-        // Extract candidate information
+        // Extract candidate information from profile
         JsonNode profileNode = candidateNode.path("profile");
-        String firstName = profileNode.path("firstName").asText();
-        String lastName = profileNode.path("lastName").asText();
+        String fullName = profileNode.path("fullName").asText();
         
-        if (firstName == null || firstName.isEmpty() || lastName == null || lastName.isEmpty()) {
-            result.addError(0, "Missing candidate name for external ID: " + externalId);
+        log.debug("Candidate #{} full name: {}", index, fullName);
+        
+        if (fullName == null || fullName.trim().isEmpty()) {
+            String errorMsg = "Missing candidate name (fullName) for external ID: " + externalId;
+            log.error(errorMsg);
+            result.addError(index, errorMsg);
             return;
         }
+        
+        // Split full name into first name and last name using intelligent splitter
+        String[] nameParts = nameSplitterService.splitName(fullName);
+        String firstName = nameParts[0];
+        String lastName = nameParts[1];
+        
+        log.info("Candidate #{}: Split '{}' into firstName='{}', lastName='{}'", 
+                index, fullName, firstName, lastName);
         
         // Find or create candidate
         Candidate candidate = candidateService.findOrCreateCandidate(firstName, lastName);
         
         // Extract application information
-        String roleCategory = extractRoleCategory(candidateNode);
+        String roleCategory = extractRoleCategory(candidateNode, job);
         BigDecimal dailyRate = extractDailyRate(candidateNode);
         LocalDate applicationDate = extractApplicationDate(candidateNode);
         Application.ApplicationStatus status = mapStatus(candidateNode);
@@ -135,29 +156,56 @@ public class ProUnityImportService {
         applicationRepository.save(application);
         result.incrementSuccessCount();
         
-        log.debug("Successfully imported candidate: {} {} (External ID: {})", 
-                firstName, lastName, externalId);
+        log.info("Successfully imported candidate #{}: {} {} (External ID: {})", 
+                index, firstName, lastName, externalId);
     }
     
-    private String extractRoleCategory(JsonNode candidateNode) {
-        // Try to get role from candidate data
+    private String extractRoleCategory(JsonNode candidateNode, Job job) {
+        // Try to get role from candidate's roles
         JsonNode rolesNode = candidateNode.path("roles");
         if (rolesNode.isArray() && rolesNode.size() > 0) {
-            return rolesNode.get(0).path("name").asText("Unknown");
+            String roleName = rolesNode.get(0).path("name").asText();
+            if (roleName != null && !roleName.isEmpty()) {
+                return roleName;
+            }
         }
+        
+        // Fallback to job title if available
+        if (job != null && job.getTitle() != null) {
+            return job.getTitle();
+        }
+        
         return "Unknown";
     }
     
     private BigDecimal extractDailyRate(JsonNode candidateNode) {
-        // Try to get daily rate from benchmark or proposed rate
+        // Try to get daily rate from various fields in candidateNode
         JsonNode rateNode = candidateNode.path("proposedDailyRate");
         if (!rateNode.isMissingNode() && !rateNode.isNull()) {
-            return new BigDecimal(rateNode.asText());
+            try {
+                return new BigDecimal(rateNode.asText());
+            } catch (NumberFormatException e) {
+                log.warn("Failed to parse proposedDailyRate: {}", rateNode.asText());
+            }
         }
         
         rateNode = candidateNode.path("benchmarkDailyRate");
         if (!rateNode.isMissingNode() && !rateNode.isNull()) {
-            return new BigDecimal(rateNode.asText());
+            try {
+                return new BigDecimal(rateNode.asText());
+            } catch (NumberFormatException e) {
+                log.warn("Failed to parse benchmarkDailyRate: {}", rateNode.asText());
+            }
+        }
+        
+        // Try profile.dailyRate
+        rateNode = candidateNode.path("profile").path("dailyRate");
+        if (!rateNode.isMissingNode() && !rateNode.isNull()) {
+            try {
+                return new BigDecimal(rateNode.asText());
+            } catch (NumberFormatException e) {
+                log.warn("Failed to parse profile.dailyRate: {}", rateNode.asText());
+            }
         }
         
         return null;
@@ -169,14 +217,23 @@ public class ProUnityImportService {
         if (dateStr == null || dateStr.isEmpty()) {
             dateStr = candidateNode.path("createdDate").asText();
         }
+        if (dateStr == null || dateStr.isEmpty()) {
+            dateStr = candidateNode.path("submittedDate").asText();
+        }
         
         if (dateStr != null && !dateStr.isEmpty()) {
             try {
-                // Parse ISO date format
+                // Parse ISO date format (e.g., "2026-01-28T10:44:53.73")
                 LocalDateTime dateTime = LocalDateTime.parse(dateStr, DateTimeFormatter.ISO_DATE_TIME);
                 return dateTime.toLocalDate();
             } catch (Exception e) {
-                log.warn("Failed to parse date: {}", dateStr);
+                log.warn("Failed to parse date '{}', trying alternative formats", dateStr);
+                try {
+                    // Try just date format
+                    return LocalDate.parse(dateStr, DateTimeFormatter.ISO_DATE);
+                } catch (Exception e2) {
+                    log.warn("Failed to parse date: {}", dateStr);
+                }
             }
         }
         
@@ -186,6 +243,11 @@ public class ProUnityImportService {
     
     private Application.ApplicationStatus mapStatus(JsonNode candidateNode) {
         String statusLabel = candidateNode.path("statusLabel").asText();
+        String statusId = candidateNode.path("statusId").asText();
+        
+        if (statusLabel == null || statusLabel.isEmpty()) {
+            statusLabel = statusId;
+        }
         
         if (statusLabel == null || statusLabel.isEmpty()) {
             return Application.ApplicationStatus.CV_RECEIVED;
@@ -194,18 +256,45 @@ public class ProUnityImportService {
         // Map Pro-Unity status to our status
         String statusLower = statusLabel.toLowerCase();
         
-        if (statusLower.contains("approved") || statusLower.contains("selected")) {
+        // Contracting/Selected statuses
+        if (statusLower.contains("contract") || statusLower.contains("selected")) {
+            if (statusLower.contains("signed")) {
+                return Application.ApplicationStatus.APPROVED_FOR_MISSION;
+            }
             return Application.ApplicationStatus.APPROVED_FOR_MISSION;
-        } else if (statusLower.contains("rejected") || statusLower.contains("declined")) {
+        }
+        
+        // Rejected/Withdrawn statuses
+        if (statusLower.contains("reject") || statusLower.contains("declined") || 
+            statusLower.contains("withdrawn") || statusLower.contains("refused")) {
             return Application.ApplicationStatus.REJECTED;
-        } else if (statusLower.contains("interview")) {
+        }
+        
+        // Interview statuses
+        if (statusLower.contains("interview")) {
             return Application.ApplicationStatus.REMOTE_INTERVIEW;
-        } else if (statusLower.contains("shortlist") || statusLower.contains("reviewed")) {
+        }
+        
+        // Shortlist/Longlist statuses
+        if (statusLower.contains("shortlist")) {
             return Application.ApplicationStatus.CV_REVIEWED;
-        } else if (statusLower.contains("hold")) {
+        }
+        
+        if (statusLower.contains("longlist")) {
+            return Application.ApplicationStatus.CV_REVIEWED;
+        }
+        
+        // Pre-selected/Applied statuses
+        if (statusLower.contains("preselected") || statusLower.contains("pinned")) {
+            return Application.ApplicationStatus.CV_REVIEWED;
+        }
+        
+        // On Hold
+        if (statusLower.contains("hold")) {
             return Application.ApplicationStatus.ON_HOLD;
         }
         
+        // Default for "Applied" or unknown
         return Application.ApplicationStatus.CV_RECEIVED;
     }
     
@@ -215,7 +304,16 @@ public class ProUnityImportService {
         // Add status information
         String statusLabel = candidateNode.path("statusLabel").asText();
         if (statusLabel != null && !statusLabel.isEmpty()) {
-            notes.append("Status: ").append(statusLabel).append("\n");
+            notes.append("Pro-Unity Status: ").append(statusLabel).append("\n\n");
+        }
+        
+        // Add supplier information if available
+        JsonNode supplierNode = candidateNode.path("supplier");
+        if (!supplierNode.isMissingNode()) {
+            String supplierName = supplierNode.path("name").asText();
+            if (supplierName != null && !supplierName.isEmpty()) {
+                notes.append("Supplier: ").append(supplierName).append("\n");
+            }
         }
         
         // Add comments if available
@@ -225,20 +323,35 @@ public class ProUnityImportService {
             for (JsonNode comment : commentsNode) {
                 String text = comment.path("text").asText();
                 String author = comment.path("author").asText();
+                String date = comment.path("createdDate").asText();
+                
                 if (text != null && !text.isEmpty()) {
                     notes.append("- ").append(text);
                     if (author != null && !author.isEmpty()) {
-                        notes.append(" (").append(author).append(")");
+                        notes.append(" (by ").append(author);
+                        if (date != null && !date.isEmpty()) {
+                            notes.append(" on ").append(date);
+                        }
+                        notes.append(")");
                     }
                     notes.append("\n");
                 }
             }
         }
         
-        // Add evaluation score if available
+        // Add evaluation/score if available
         JsonNode scoreNode = candidateNode.path("score");
         if (!scoreNode.isMissingNode() && !scoreNode.isNull()) {
             notes.append("\nScore: ").append(scoreNode.asText()).append("\n");
+        }
+        
+        // Add matching score if available
+        JsonNode matchingNode = candidateNode.path("matching");
+        if (!matchingNode.isMissingNode()) {
+            JsonNode percentageNode = matchingNode.path("percentage");
+            if (!percentageNode.isMissingNode()) {
+                notes.append("Matching: ").append(percentageNode.asText()).append("%\n");
+            }
         }
         
         return notes.toString().trim();
@@ -255,6 +368,19 @@ public class ProUnityImportService {
         JsonNode rejectionNode = candidateNode.path("rejectionReason");
         if (!rejectionNode.isMissingNode() && !rejectionNode.isNull()) {
             return "Rejected: " + rejectionNode.asText();
+        }
+        
+        // Check status-based conclusion
+        String statusLabel = candidateNode.path("statusLabel").asText();
+        if (statusLabel != null && !statusLabel.isEmpty()) {
+            String statusLower = statusLabel.toLowerCase();
+            if (statusLower.contains("signed") || statusLower.contains("contracted")) {
+                return "Contract signed";
+            } else if (statusLower.contains("selected")) {
+                return "Selected for mission";
+            } else if (statusLower.contains("rejected")) {
+                return "Not selected";
+            }
         }
         
         return null;
