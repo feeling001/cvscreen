@@ -1,23 +1,32 @@
-# CVScreen v0.1 - Multi-stage Dockerfile
+# CVScreen v0.1 - Multi-stage Dockerfile (CORRECTED)
 # Stage 1: Build Frontend
-FROM node:24-alpine AS frontend-builder
+FROM node:20-alpine AS frontend-builder
+
+# Augmenter la mémoire disponible
+ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 WORKDIR /app/frontend
 
 # Copy package files
 COPY frontend/package*.json ./
 
-# Install dependencies
-RUN npm ci --silent
+# Install dependencies with production flag
+RUN npm ci --only=production=false && npm cache clean --force
 
 # Copy frontend source
 COPY frontend/ ./
 
-# Build Angular application for production
-RUN npm run build
+# Build Angular application for production with verbose output
+RUN npm run build -- --configuration production --verbose || \
+    (echo "BUILD FAILED - Checking for errors..." && \
+     npm run build -- --configuration production 2>&1 | tee /tmp/build.log && \
+     exit 1)
+
+# Vérifier que le build existe
+RUN ls -la dist/cvscreen-frontend/ || (echo "ERROR: Build output not found!" && exit 1)
 
 # Stage 2: Build Backend
-FROM maven:3.9-eclipse-temurin-17-alpine AS backend-builder
+FROM maven:3.9-eclipse-temurin-21-alpine AS backend-builder
 
 WORKDIR /app/backend
 
@@ -33,11 +42,14 @@ COPY backend/src ./src
 # Build Spring Boot application
 RUN mvn clean package -DskipTests -B
 
+# Vérifier que le JAR existe
+RUN ls -la target/*.jar || (echo "ERROR: JAR not found!" && exit 1)
+
 # Stage 3: Runtime
-FROM eclipse-temurin:17-jre-alpine
+FROM eclipse-temurin:21-jre-alpine
 
 # Install nginx
-RUN apk add --no-cache nginx
+RUN apk add --no-cache nginx wget
 
 # Create application directory
 WORKDIR /app
@@ -46,7 +58,13 @@ WORKDIR /app
 COPY --from=backend-builder /app/backend/target/cvscreen-backend-0.1.jar ./backend.jar
 
 # Copy frontend build from builder
-COPY --from=frontend-builder /app/frontend/dist/cvscreen-frontend /usr/share/nginx/html
+COPY --from=frontend-builder /app/frontend/dist/cvscreen-frontend/browser /usr/share/nginx/html
+
+# Fallback: si le dossier browser n'existe pas, essayer sans
+RUN if [ ! -d /usr/share/nginx/html ] || [ -z "$(ls -A /usr/share/nginx/html)" ]; then \
+        rm -rf /usr/share/nginx/html && \
+        mkdir -p /usr/share/nginx/html; \
+    fi
 
 # Copy nginx configuration
 COPY docker/nginx.conf /etc/nginx/nginx.conf
@@ -63,7 +81,7 @@ RUN chmod +x /app/startup.sh
 EXPOSE 80
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost/api/auth/login || exit 1
 
 # Run startup script
