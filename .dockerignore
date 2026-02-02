@@ -1,0 +1,39 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.iml
+
+# Frontend
+frontend/node_modules
+frontend/dist
+frontend/.angular
+frontend/package-lock.json
+
+# Backend
+backend/target
+backend/.mvn
+backend/mvnw
+backend/mvnw.cmd
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Documentation (optionnel)
+*.md
+!README.md
+
+# Fichiers temporaires
+*.tmp
+*.swp
+*.bak
+
+# CVs (sera créé dans le conteneur)
+backend/cvs

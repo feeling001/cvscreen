@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  database:
+    image: postgres:15-alpine
+    container_name: cvscreen-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: cvscreen
+      POSTGRES_USER: cvscreen
+      POSTGRES_PASSWORD: cvscreen
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cvscreen"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - cvscreen-network
+
+  # CVScreen Application (Frontend + Backend + Nginx)
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cvscreen-app
+    restart: unless-stopped
+    environment:
+      # Database connection
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_NAME: cvscreen
+      DB_USER: cvscreen
+      DB_PASSWORD: cvscreen
+      
+      # JWT Configuration
+      JWT_SECRET: CVScreenSecretKeyForJWTTokenGenerationAndValidation2024
+      JWT_EXPIRATION: 86400000
+      
+      # Application settings
+      SPRING_PROFILES_ACTIVE: production
+    volumes:
+      # Persist CV files
+      - cv_storage:/app/cvs
+      
+      # Persist logs
+      - app_logs:/var/log/nginx
+    ports:
+      - "80:80"
+    depends_on:
+      database:
+        condition: service_healthy
+    networks:
+      - cvscreen-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/api/auth/login"]
+      interval: 30s
+      timeout: 10s
+      start_period: 60s
+      retries: 3
+
+volumes:
+  postgres_data:
+    driver: local
+  cv_storage:
+    driver: local
+  app_logs:
+    driver: local
+
+networks:
+  cvscreen-network:
+    driver: bridge
