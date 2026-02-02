@@ -31,7 +31,6 @@ public class ProUnityImportService {
     private final CandidateService candidateService;
     private final JobService jobService;
     private final CompanyService companyService;
-    private final NameSplitterService nameSplitterService;
     private final ObjectMapper objectMapper;
     
     @Transactional
@@ -73,10 +72,9 @@ public class ProUnityImportService {
             // Extract job information
             String jobReference = extractJobReference(rootNode);
             String jobTitle = extractJobTitle(rootNode);
-            String companyName = extractCompanyName(candidatesNode);
             
-            log.info("Job context - Reference: '{}', Title: '{}', Company: '{}'", 
-                    jobReference, jobTitle, companyName);
+            log.info("Job context - Reference: '{}', Title: '{}'", 
+                    jobReference, jobTitle);
             
             // Find or create job
             Job job = null;
@@ -87,19 +85,12 @@ public class ProUnityImportService {
                 log.warn("No job reference found, candidates will be imported as spontaneous applications");
             }
             
-            // Find or create company
-            Company company = null;
-            if (companyName != null && !companyName.isEmpty()) {
-                company = companyService.findOrCreateCompany(companyName);
-                log.info("✓ Company created/found: {}", companyName);
-            }
-            
             // Process candidates
             int candidateIndex = 0;
             for (JsonNode candidateNode : candidatesNode) {
                 candidateIndex++;
                 try {
-                    importCandidate(candidateNode, job, company, result, candidateIndex);
+                    importCandidate(candidateNode, job, result, candidateIndex);
                 } catch (Exception e) {
                     log.error("✗ Failed to import candidate #{}: {}", candidateIndex, e.getMessage(), e);
                     result.addError(candidateIndex, "Failed: " + e.getMessage());
@@ -213,32 +204,6 @@ public class ProUnityImportService {
         return null;
     }
     
-    private String extractCompanyName(JsonNode rootNode) {
-        if (rootNode.has("department") && rootNode.get("department").has("name")) {
-            return rootNode.get("department").get("name").asText();
-        }
-        
-        if (rootNode.has("jobPost") && rootNode.get("jobPost").has("department")) {
-            JsonNode dept = rootNode.get("jobPost").get("department");
-            if (dept.has("name")) {
-                return dept.get("name").asText();
-            }
-        }
-        
-        return null;
-/*
-        title = "unknown";
-        
-        if (candidateNode.has("resourceProfile")) {
-            JsonNode ressourceNode = candidateNode.get("resourceProfile");
-            if( ressourceNode.has("contactInfo")){
-                JsonNode contactInfoNode = ressourceNode.get("contactInfo");
-                title = getTextValue(contactInfoNode, "company");
-            }
-        }
-            */
-    }
-    
     private String getTextValue(JsonNode node, String fieldName) {
         if (node != null && node.has(fieldName)) {
             String value = node.get(fieldName).asText();
@@ -249,7 +214,7 @@ public class ProUnityImportService {
         return null;
     }
     
-    private void importCandidate(JsonNode candidateNode, Job job, Company company, ImportResult result, int index) {
+    private void importCandidate(JsonNode candidateNode, Job job, ImportResult result, int index) {
         // Extract Pro-Unity UUID
         String externalId = candidateNode.path("id").asText();
         
@@ -262,27 +227,44 @@ public class ProUnityImportService {
             return;
         }
         
-        // Extract candidate name from profile
-        // JsonNode profileNode = candidateNode.path("profile");
-        String fullName = candidateNode.path("fullName").asText();
+        // Extract candidate name from resourceProfile
+        JsonNode resourceProfileNode = candidateNode.path("resourceProfile");
         
-        if (fullName == null || fullName.trim().isEmpty()) {
-            String errorMsg = "Missing candidate fullName";
-            log.error("✗ Candidate #{}: {}", index, errorMsg);
-            result.addError(index, errorMsg);
-            return;
+        String firstName = null;
+        String lastName = null;
+        
+        if (!resourceProfileNode.isMissingNode()) {
+            firstName = getTextValue(resourceProfileNode, "firstName");
+            lastName = getTextValue(resourceProfileNode, "lastName");
         }
         
-        // Split full name intelligently
-        String[] nameParts = nameSplitterService.splitName(fullName);
-        String firstName = nameParts[0];
-        String lastName = nameParts[1];
-        
-        log.debug("Candidate #{}: '{}' → firstName='{}', lastName='{}'", 
-                index, fullName, firstName, lastName);
+        // Fallback to fullName if firstName/lastName not found
+        if ((firstName == null || firstName.isEmpty()) || (lastName == null || lastName.isEmpty())) {
+            String fullName = candidateNode.path("fullName").asText();
+            
+            if (fullName == null || fullName.trim().isEmpty()) {
+                String errorMsg = "Missing candidate name information";
+                log.error("✗ Candidate #{}: {}", index, errorMsg);
+                result.addError(index, errorMsg);
+                return;
+            }
+            
+            // Use simple split as fallback
+            String[] parts = fullName.trim().split("\\s+", 2);
+            firstName = parts[0];
+            lastName = parts.length > 1 ? parts[1] : parts[0];
+            
+            log.debug("Candidate #{}: Extracted from fullName '{}' → firstName='{}', lastName='{}'", 
+                    index, fullName, firstName, lastName);
+        } else {
+            log.debug("Candidate #{}: firstName='{}', lastName='{}'", index, firstName, lastName);
+        }
         
         // Find or create candidate
         Candidate candidate = candidateService.findOrCreateCandidate(firstName, lastName);
+        
+        // Extract company information for this specific candidate
+        Company company = extractCompanyForCandidate(candidateNode, index);
         
         // Extract application details
         String roleCategory = extractRoleCategory(candidateNode, job);
@@ -301,12 +283,6 @@ public class ProUnityImportService {
         application.setRoleCategory(roleCategory);
         application.setDailyRate(dailyRate);
         application.setApplicationDate(applicationDate);
-        /* 
-        switch ( status ) {
-            case "Applied_NotPreSelected":
-                application.setStatus("CV Recieved");
-                break;
-        }*/
         application.setStatus(status);
         application.setEvaluationNotes(evaluationNotes);
         application.setConclusion(conclusion);
@@ -314,8 +290,47 @@ public class ProUnityImportService {
         applicationRepository.save(application);
         result.incrementSuccessCount();
         
-        log.info("✓ Candidate #{}: {} {} - {} ({})", 
-                index, firstName, lastName, roleCategory, status);
+        log.info("✓ Candidate #{}: {} {} - {} ({}) - Company: {}", 
+                index, firstName, lastName, roleCategory, status, 
+                company != null ? company.getName() : "None");
+    }
+    
+    /**
+     * Extract company information for a specific candidate
+     */
+    private Company extractCompanyForCandidate(JsonNode candidateNode, int candidateIndex) {
+        String companyName = null;
+        
+        // First try: resourceProfile.contactInfo.company
+        JsonNode resourceProfileNode = candidateNode.path("resourceProfile");
+        if (!resourceProfileNode.isMissingNode()) {
+            JsonNode contactInfoNode = resourceProfileNode.path("contactInfo");
+            if (!contactInfoNode.isMissingNode()) {
+                companyName = getTextValue(contactInfoNode, "company");
+                if (companyName != null) {
+                    log.debug("Candidate #{}: Found company in resourceProfile.contactInfo.company: {}", 
+                            candidateIndex, companyName);
+                }
+            }
+        }
+        
+        // Second try: supplierName (direct field)
+        if (companyName == null || companyName.isEmpty()) {
+            companyName = getTextValue(candidateNode, "supplierName");
+            if (companyName != null) {
+                log.debug("Candidate #{}: Found company in supplierName: {}", candidateIndex, companyName);
+            }
+        }
+        
+        // If no company found
+        if (companyName == null || companyName.trim().isEmpty()) {
+            log.debug("Candidate #{}: No company information found", candidateIndex);
+            return null;
+        }
+        
+        // Find or create company
+        Company company = companyService.findOrCreateCompany(companyName.trim());
+        return company;
     }
     
     private String extractRoleCategory(JsonNode candidateNode, Job job) {
@@ -399,8 +414,7 @@ public class ProUnityImportService {
     private Application.ApplicationStatus mapStatus(JsonNode candidateNode) {
         String statusLabel = candidateNode.path("status").asText();
         String statusLower = statusLabel.toLowerCase();
-        // CV_RECEIVED CV_REVIEWED APPROVED_FOR_MISSION REJECTED
-
+        
         if (statusLower.contains("notpreselected") || statusLower.contains("signed")) {
             return Application.ApplicationStatus.CV_RECEIVED;
         }
@@ -416,7 +430,7 @@ public class ProUnityImportService {
         else if (statusLower.contains("interview")) {
             return Application.ApplicationStatus.REMOTE_INTERVIEW;
         }
-        if (statusLower.contains("shortlist") || statusLower.contains("preselected")) {
+        else if (statusLower.contains("shortlist") || statusLower.contains("preselected")) {
             return Application.ApplicationStatus.CV_REVIEWED;
         }
         else if (statusLower.contains("longlist") || statusLower.contains("pinned")) {
