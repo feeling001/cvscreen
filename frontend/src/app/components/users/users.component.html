@@ -1,0 +1,83 @@
+<div class="container">
+  <div class="header">
+    <h2>User Management</h2>
+    <button 
+      mat-raised-button 
+      color="primary" 
+      (click)="openCreateDialog()"
+      [disabled]="!isAdmin"
+      [matTooltip]="!isAdmin ? 'Only admin can create users' : 'Create new user'">
+      <mat-icon>add</mat-icon>
+      New User
+    </button>
+  </div>
+
+  <table mat-table [dataSource]="users" class="mat-elevation-z8">
+    <ng-container matColumnDef="username">
+      <th mat-header-cell *matHeaderCellDef>Username</th>
+      <td mat-cell *matCellDef="let user">
+        <strong>{{ user.username }}</strong>
+        <mat-chip *ngIf="user.username === 'admin'" class="admin-chip">Admin</mat-chip>
+        <mat-chip *ngIf="user.id === currentUser?.id" class="current-chip">You</mat-chip>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="displayName">
+      <th mat-header-cell *matHeaderCellDef>Display Name</th>
+      <td mat-cell *matCellDef="let user">{{ user.displayName }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="enabled">
+      <th mat-header-cell *matHeaderCellDef>Status</th>
+      <td mat-cell *matCellDef="let user">
+        <mat-chip [class.enabled-chip]="user.enabled" [class.disabled-chip]="!user.enabled">
+          {{ user.enabled ? 'Enabled' : 'Disabled' }}
+        </mat-chip>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="commentCount">
+      <th mat-header-cell *matHeaderCellDef>Comments</th>
+      <td mat-cell *matCellDef="let user">{{ user.commentCount || 0 }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="createdAt">
+      <th mat-header-cell *matHeaderCellDef>Created</th>
+      <td mat-cell *matCellDef="let user">{{ user.createdAt | date:'dd/MM/yyyy' }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef>Actions</th>
+      <td mat-cell *matCellDef="let user">
+        <button 
+          mat-icon-button 
+          color="primary" 
+          (click)="openEditDialog(user)"
+          [disabled]="!canEdit(user)"
+          [matTooltip]="canEdit(user) ? 'Edit user' : 'You can only edit your own profile'">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button 
+          mat-icon-button 
+          color="warn" 
+          (click)="deleteUser(user.id!, user.username)"
+          [disabled]="!canDelete(user)"
+          [matTooltip]="canDelete(user) ? 'Delete user' : (user.username === 'admin' ? 'Cannot delete admin' : 'Only admin can delete users')">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+  </table>
+
+  <div class="info-panel">
+    <mat-icon>info</mat-icon>
+    <div>
+      <p *ngIf="isAdmin"><strong>Admin privileges:</strong> You can create, edit, and delete all users.</p>
+      <p *ngIf="!isAdmin"><strong>User privileges:</strong> You can only edit your own profile (display name and password).</p>
+      <p>The admin account cannot be deleted.</p>
+    </div>
+  </div>
+</div>

@@ -26,6 +26,10 @@ export const routes: Routes = [
         loadComponent: () => import('./components/companies/companies.component').then(m => m.CompaniesComponent) 
       },
       { 
+        path: 'users', 
+        loadComponent: () => import('./components/users/users.component').then(m => m.UsersComponent)
+      },
+      { 
         path: 'import', 
         loadComponent: () => import('./components/csv-import/csv-import.component').then(m => m.CsvImportComponent)
       },

@@ -1,0 +1,69 @@
+.container {
+  padding: 20px;
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.header h2 {
+  margin: 0;
+}
+
+table {
+  width: 100%;
+}
+
+.admin-chip {
+  background-color: #ff5722 !important;
+  color: white !important;
+  font-size: 11px;
+  height: 24px;
+  margin-left: 8px;
+}
+
+.current-chip {
+  background-color: #2196f3 !important;
+  color: white !important;
+  font-size: 11px;
+  height: 24px;
+  margin-left: 8px;
+}
+
+.enabled-chip {
+  background-color: #4caf50 !important;
+  color: white !important;
+}
+
+.disabled-chip {
+  background-color: #9e9e9e !important;
+  color: white !important;
+}
+
+.info-panel {
+  display: flex;
+  gap: 16px;
+  padding: 16px;
+  background: #e3f2fd;
+  border-radius: 4px;
+  margin-top: 24px;
+  align-items: start;
+}
+
+.info-panel mat-icon {
+  color: #1976d2;
+  margin-top: 2px;
+}
+
+.info-panel p {
+  margin: 4px 0;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.info-panel strong {
+  color: #1565c0;
+}

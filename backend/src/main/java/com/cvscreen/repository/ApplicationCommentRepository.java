@@ -15,6 +15,8 @@ public interface ApplicationCommentRepository extends JpaRepository<ApplicationC
     
     List<ApplicationComment> findByUserId(Long userId);
     
+    long countByUserId(Long userId);
+    
     @Query("SELECT ac FROM ApplicationComment ac " +
            "LEFT JOIN FETCH ac.user " +
            "WHERE ac.application.id = :applicationId " +
