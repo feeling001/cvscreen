@@ -10,8 +10,14 @@ WORKDIR /app/frontend
 # Copy package files
 COPY frontend/package*.json ./
 
-# Install dependencies with production flag
-RUN npm ci --only=production=false && npm cache clean --force
+# Install dependencies (including devDependencies needed for build)
+# npm ci requires package-lock.json, so we fall back to npm install if it's not present
+# IMPORTANT: Do NOT use --only=production, we need devDependencies to build!
+RUN if [ -f package-lock.json ]; then \
+        npm ci && npm cache clean --force; \
+    else \
+        npm install && npm cache clean --force; \
+    fi
 
 # Copy frontend source
 COPY frontend/ ./
