@@ -56,13 +56,20 @@ check_dir() {
 # 1. Vérifier les commandes requises
 echo "1. Checking required commands..."
 check_command docker
-check_command docker-compose
+
+# Vérifier Docker Compose v2 (intégré à Docker)
+if docker compose version &> /dev/null; then
+    echo -e "${GREEN}✓${NC} docker compose (v2) is available"
+    COMPOSE_VERSION=$(docker compose version --short)
+    echo "   Docker Compose version: $COMPOSE_VERSION"
+else
+    echo -e "${RED}✗${NC} docker compose (v2) is NOT available"
+    echo "   Please install Docker 24.0+ with integrated Compose v2"
+    ERRORS=$((ERRORS + 1))
+fi
 
 DOCKER_VERSION=$(docker --version | grep -oE '[0-9]+\.[0-9]+')
 echo "   Docker version: $DOCKER_VERSION"
-
-COMPOSE_VERSION=$(docker-compose --version | grep -oE '[0-9]+\.[0-9]+')
-echo "   Docker Compose version: $COMPOSE_VERSION"
 
 echo ""
 
@@ -164,7 +171,7 @@ read -p "Do you want to test the Docker build? This may take 5-10 minutes. [y/N]
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "Starting build test..."
-    if docker-compose build --no-cache 2>&1 | tee /tmp/docker-build.log; then
+    if docker compose build --no-cache 2>&1 | tee /tmp/docker-build.log; then
         echo -e "${GREEN}✓${NC} Docker build successful"
     else
         echo -e "${RED}✗${NC} Docker build failed. Check /tmp/docker-build.log"
@@ -184,7 +191,7 @@ if [ $ERRORS -eq 0 ]; then
     echo -e "${GREEN}✓ All checks passed!${NC}"
     echo ""
     echo "You can now deploy with:"
-    echo "  docker-compose up -d --build"
+    echo "  docker compose up -d --build"
     echo "or"
     echo "  make install"
     exit 0

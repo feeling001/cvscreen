@@ -1,6 +1,6 @@
 # CVScreen v0.1 - Multi-stage Dockerfile
 # Stage 1: Build Frontend
-FROM node:18-alpine AS frontend-builder
+FROM node:24-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
@@ -17,7 +17,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # Stage 2: Build Backend
-FROM maven:3.8-eclipse-temurin-17-alpine AS backend-builder
+FROM maven:3.9-eclipse-temurin-17-alpine AS backend-builder
 
 WORKDIR /app/backend
 
