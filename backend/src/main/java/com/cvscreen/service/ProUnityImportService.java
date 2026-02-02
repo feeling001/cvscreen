@@ -19,6 +19,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 @Service
@@ -38,102 +39,258 @@ public class ProUnityImportService {
         ImportResult result = new ImportResult();
         
         try {
+            log.info("=== Starting Pro-Unity import ===");
+            log.info("File: {}, Size: {} bytes ({} MB)", 
+                    file.getOriginalFilename(), file.getSize(), String.format("%.2f", file.getSize() / 1024.0 / 1024.0));
+            
             // Parse JSON
             JsonNode rootNode = objectMapper.readTree(file.getInputStream());
+            log.info("JSON parsed successfully");
+            log.debug("Root node has {} fields", rootNode.size());
             
-            // Navigate to jobPost object (handle both {"jobPost": {...}} and direct {...} formats)
-            JsonNode jobPostNode = rootNode.has("jobPost") ? rootNode.get("jobPost") : rootNode;
+            // Log all root level fields to help debug
+            Iterator<String> fieldNames = rootNode.fieldNames();
+            StringBuilder fieldsInfo = new StringBuilder("Root fields: ");
+            while (fieldNames.hasNext()) {
+                fieldsInfo.append(fieldNames.next()).append(", ");
+            }
+            log.info(fieldsInfo.toString());
+            
+            // Navigate to candidates - try multiple paths
+            JsonNode candidatesNode = findCandidatesNode(rootNode);
+            
+            if (candidatesNode == null || !candidatesNode.isArray()) {
+                String errorMsg = "No candidates array found in JSON";
+                log.error(errorMsg);
+                log.error("JSON structure (first 1000 chars): {}", 
+                        rootNode.toPrettyString().substring(0, Math.min(1000, rootNode.toPrettyString().length())));
+                result.addError(0, errorMsg + ". Please check the file structure.");
+                return result;
+            }
+            
+            log.info("✓ Found {} candidates in JSON", candidatesNode.size());
             
             // Extract job information
-            String jobReference = jobPostNode.path("projectCode").asText();
-            String jobTitle = jobPostNode.path("name").asText();
-            String companyName = jobPostNode.path("department").path("name").asText();
+            String jobReference = extractJobReference(rootNode);
+            String jobTitle = extractJobTitle(rootNode);
+            String companyName = extractCompanyName(candidatesNode);
             
-            log.info("Importing candidates for job: {} - {}", jobReference, jobTitle);
+            log.info("Job context - Reference: '{}', Title: '{}', Company: '{}'", 
+                    jobReference, jobTitle, companyName);
             
             // Find or create job
             Job job = null;
             if (jobReference != null && !jobReference.isEmpty()) {
-                job = jobService.findOrCreateJob(jobReference, jobTitle, "Unknown");
+                job = jobService.findOrCreateJob(jobReference, jobTitle != null ? jobTitle : "Unknown", "Unknown");
+                log.info("✓ Job created/found: {}", jobReference);
+            } else {
+                log.warn("No job reference found, candidates will be imported as spontaneous applications");
             }
             
             // Find or create company
             Company company = null;
             if (companyName != null && !companyName.isEmpty()) {
                 company = companyService.findOrCreateCompany(companyName);
+                log.info("✓ Company created/found: {}", companyName);
             }
             
             // Process candidates
-            JsonNode candidatesNode = jobPostNode.path("candidates");
-            if (candidatesNode.isArray()) {
-                int candidateIndex = 0;
-                for (JsonNode candidateNode : candidatesNode) {
-                    candidateIndex++;
-                    try {
-                        importCandidate(candidateNode, job, company, result, candidateIndex);
-                    } catch (Exception e) {
-                        log.error("Failed to import candidate #{}: {}", candidateIndex, e.getMessage(), e);
-                        result.addError(candidateIndex, "Failed to import candidate: " + e.getMessage());
-                    }
+            int candidateIndex = 0;
+            for (JsonNode candidateNode : candidatesNode) {
+                candidateIndex++;
+                try {
+                    importCandidate(candidateNode, job, company, result, candidateIndex);
+                } catch (Exception e) {
+                    log.error("✗ Failed to import candidate #{}: {}", candidateIndex, e.getMessage(), e);
+                    result.addError(candidateIndex, "Failed: " + e.getMessage());
                 }
-            } else {
-                log.warn("No candidates array found in JSON");
             }
             
-            log.info("Import completed. Success: {}, Skipped: {}, Failed: {}", 
+            log.info("=== Import completed ===");
+            log.info("SUCCESS: {}, SKIPPED (duplicates): {}, FAILED: {}", 
                     result.getSuccessCount(), result.getSkippedCount(), result.getFailedCount());
             
         } catch (IOException e) {
-            log.error("Failed to parse Pro-Unity JSON", e);
-            result.addError(0, "Failed to parse JSON file: " + e.getMessage());
+            log.error("✗ Failed to parse Pro-Unity JSON", e);
+            result.addError(0, "Failed to parse JSON: " + e.getMessage());
+        } catch (Exception e) {
+            log.error("✗ Unexpected error during import", e);
+            result.addError(0, "Unexpected error: " + e.getMessage());
         }
         
         return result;
+    }
+    
+    /**
+     * Try to find the candidates array in various possible locations
+     */
+    private JsonNode findCandidatesNode(JsonNode rootNode) {
+        log.debug("Searching for candidates array...");
+        
+        // Try direct candidates array
+        if (rootNode.has("candidates")) {
+            JsonNode candidates = rootNode.get("candidates");
+            if (candidates.isArray()) {
+                log.info("✓ Found candidates at root.candidates");
+                return candidates;
+            }
+        }
+        
+        // Try jobPost.candidates
+        if (rootNode.has("jobPost")) {
+            JsonNode jobPost = rootNode.get("jobPost");
+            if (jobPost.has("candidates") && jobPost.get("candidates").isArray()) {
+                log.info("✓ Found candidates at root.jobPost.candidates");
+                return jobPost.get("candidates");
+            }
+        }
+        
+        // Try data.candidates
+        if (rootNode.has("data")) {
+            JsonNode data = rootNode.get("data");
+            if (data.has("candidates") && data.get("candidates").isArray()) {
+                log.info("✓ Found candidates at root.data.candidates");
+                return data.get("candidates");
+            }
+        }
+        
+        // Maybe the root itself is an array of candidates?
+        if (rootNode.isArray()) {
+            log.info("✓ Root node itself is an array (assuming candidates)");
+            return rootNode;
+        }
+        
+        log.error("✗ Could not find candidates array in any expected location");
+        return null;
+    }
+    
+    private String extractJobReference(JsonNode rootNode) {
+        String ref = getTextValue(rootNode, "projectCode");
+        if (ref != null) {
+            log.debug("Found jobReference at root.projectCode: {}", ref);
+            return ref;
+        }
+        
+        ref = getTextValue(rootNode, "jobReference");
+        if (ref != null) {
+            log.debug("Found jobReference at root.jobReference: {}", ref);
+            return ref;
+        }
+        
+        ref = getTextValue(rootNode, "reference");
+        if (ref != null) {
+            log.debug("Found jobReference at root.reference: {}", ref);
+            return ref;
+        }
+        
+        if (rootNode.has("jobPost")) {
+            ref = getTextValue(rootNode.get("jobPost"), "projectCode");
+            if (ref != null) {
+                log.debug("Found jobReference at jobPost.projectCode: {}", ref);
+                return ref;
+            }
+        }
+        
+        log.debug("No job reference found");
+        return null;
+    }
+    
+    private String extractJobTitle(JsonNode rootNode) {
+        String title = getTextValue(rootNode, "name");
+        if (title != null) return title;
+        
+        title = getTextValue(rootNode, "title");
+        if (title != null) return title;
+        
+        if (rootNode.has("jobPost")) {
+            title = getTextValue(rootNode.get("jobPost"), "name");
+            if (title != null) return title;
+            
+            title = getTextValue(rootNode.get("jobPost"), "title");
+            if (title != null) return title;
+        }
+        
+        return null;
+    }
+    
+    private String extractCompanyName(JsonNode rootNode) {
+        if (rootNode.has("department") && rootNode.get("department").has("name")) {
+            return rootNode.get("department").get("name").asText();
+        }
+        
+        if (rootNode.has("jobPost") && rootNode.get("jobPost").has("department")) {
+            JsonNode dept = rootNode.get("jobPost").get("department");
+            if (dept.has("name")) {
+                return dept.get("name").asText();
+            }
+        }
+        
+        return null;
+/*
+        title = "unknown";
+        
+        if (candidateNode.has("resourceProfile")) {
+            JsonNode ressourceNode = candidateNode.get("resourceProfile");
+            if( ressourceNode.has("contactInfo")){
+                JsonNode contactInfoNode = ressourceNode.get("contactInfo");
+                title = getTextValue(contactInfoNode, "company");
+            }
+        }
+            */
+    }
+    
+    private String getTextValue(JsonNode node, String fieldName) {
+        if (node != null && node.has(fieldName)) {
+            String value = node.get(fieldName).asText();
+            if (value != null && !value.trim().isEmpty() && !"null".equalsIgnoreCase(value)) {
+                return value.trim();
+            }
+        }
+        return null;
     }
     
     private void importCandidate(JsonNode candidateNode, Job job, Company company, ImportResult result, int index) {
         // Extract Pro-Unity UUID
         String externalId = candidateNode.path("id").asText();
         
-        log.debug("Processing candidate #{} with external ID: {}", index, externalId);
+        log.debug("Processing candidate #{} (externalId: {})", index, externalId);
         
-        // Check if application already exists
+        // Check if application already exists (duplicate detection)
         if (externalId != null && !externalId.isEmpty() && applicationRepository.existsByExternalId(externalId)) {
-            log.debug("Application with external ID {} already exists, skipping", externalId);
+            log.info("↻ Candidate #{} already exists (externalId: {}), skipping", index, externalId);
             result.incrementSkippedCount();
             return;
         }
         
-        // Extract candidate information from profile
-        JsonNode profileNode = candidateNode.path("profile");
-        String fullName = profileNode.path("fullName").asText();
-        
-        log.debug("Candidate #{} full name: {}", index, fullName);
+        // Extract candidate name from profile
+        // JsonNode profileNode = candidateNode.path("profile");
+        String fullName = candidateNode.path("fullName").asText();
         
         if (fullName == null || fullName.trim().isEmpty()) {
-            String errorMsg = "Missing candidate name (fullName) for external ID: " + externalId;
-            log.error(errorMsg);
+            String errorMsg = "Missing candidate fullName";
+            log.error("✗ Candidate #{}: {}", index, errorMsg);
             result.addError(index, errorMsg);
             return;
         }
         
-        // Split full name into first name and last name using intelligent splitter
+        // Split full name intelligently
         String[] nameParts = nameSplitterService.splitName(fullName);
         String firstName = nameParts[0];
         String lastName = nameParts[1];
         
-        log.info("Candidate #{}: Split '{}' into firstName='{}', lastName='{}'", 
+        log.debug("Candidate #{}: '{}' → firstName='{}', lastName='{}'", 
                 index, fullName, firstName, lastName);
         
         // Find or create candidate
         Candidate candidate = candidateService.findOrCreateCandidate(firstName, lastName);
         
-        // Extract application information
+        // Extract application details
         String roleCategory = extractRoleCategory(candidateNode, job);
         BigDecimal dailyRate = extractDailyRate(candidateNode);
         LocalDate applicationDate = extractApplicationDate(candidateNode);
         Application.ApplicationStatus status = mapStatus(candidateNode);
         String evaluationNotes = extractEvaluationNotes(candidateNode);
+        String conclusion = extractConclusion(candidateNode);
         
         // Create application
         Application application = new Application();
@@ -144,24 +301,25 @@ public class ProUnityImportService {
         application.setRoleCategory(roleCategory);
         application.setDailyRate(dailyRate);
         application.setApplicationDate(applicationDate);
+        /* 
+        switch ( status ) {
+            case "Applied_NotPreSelected":
+                application.setStatus("CV Recieved");
+                break;
+        }*/
         application.setStatus(status);
         application.setEvaluationNotes(evaluationNotes);
-        
-        // Extract conclusion if available
-        String conclusion = extractConclusion(candidateNode);
-        if (conclusion != null && !conclusion.isEmpty()) {
-            application.setConclusion(conclusion);
-        }
+        application.setConclusion(conclusion);
         
         applicationRepository.save(application);
         result.incrementSuccessCount();
         
-        log.info("Successfully imported candidate #{}: {} {} (External ID: {})", 
-                index, firstName, lastName, externalId);
+        log.info("✓ Candidate #{}: {} {} - {} ({})", 
+                index, firstName, lastName, roleCategory, status);
     }
     
     private String extractRoleCategory(JsonNode candidateNode, Job job) {
-        // Try to get role from candidate's roles
+        // Try roles array
         JsonNode rolesNode = candidateNode.path("roles");
         if (rolesNode.isArray() && rolesNode.size() > 0) {
             String roleName = rolesNode.get(0).path("name").asText();
@@ -170,41 +328,47 @@ public class ProUnityImportService {
             }
         }
         
-        // Fallback to job title if available
-        if (job != null && job.getTitle() != null) {
+        // Fallback to job title
+        if (job != null && job.getTitle() != null && !job.getTitle().equals("Unknown")) {
             return job.getTitle();
+        }
+        
+        // Try profile.jobTitle
+        String jobTitle = candidateNode.path("profile").path("jobTitle").asText();
+        if (jobTitle != null && !jobTitle.isEmpty()) {
+            return jobTitle;
         }
         
         return "Unknown";
     }
     
     private BigDecimal extractDailyRate(JsonNode candidateNode) {
-        // Try to get daily rate from various fields in candidateNode
-        JsonNode rateNode = candidateNode.path("proposedDailyRate");
-        if (!rateNode.isMissingNode() && !rateNode.isNull()) {
-            try {
-                return new BigDecimal(rateNode.asText());
-            } catch (NumberFormatException e) {
-                log.warn("Failed to parse proposedDailyRate: {}", rateNode.asText());
+        String[] rateFields = {"proposedDailyRate", "benchmarkDailyRate", "dailyRate", "rate"};
+        
+        for (String fieldName : rateFields) {
+            JsonNode rateNode = candidateNode.path(fieldName);
+            if (!rateNode.isMissingNode() && !rateNode.isNull()) {
+                try {
+                    String rateStr = rateNode.asText().replaceAll("[^0-9.]", "");
+                    if (!rateStr.isEmpty()) {
+                        return new BigDecimal(rateStr);
+                    }
+                } catch (NumberFormatException e) {
+                    log.debug("Could not parse {} as number", fieldName);
+                }
             }
         }
         
-        rateNode = candidateNode.path("benchmarkDailyRate");
-        if (!rateNode.isMissingNode() && !rateNode.isNull()) {
+        // Try in profile
+        JsonNode profileRate = candidateNode.path("profile").path("dailyRate");
+        if (!profileRate.isMissingNode()) {
             try {
-                return new BigDecimal(rateNode.asText());
+                String rateStr = profileRate.asText().replaceAll("[^0-9.]", "");
+                if (!rateStr.isEmpty()) {
+                    return new BigDecimal(rateStr);
+                }
             } catch (NumberFormatException e) {
-                log.warn("Failed to parse benchmarkDailyRate: {}", rateNode.asText());
-            }
-        }
-        
-        // Try profile.dailyRate
-        rateNode = candidateNode.path("profile").path("dailyRate");
-        if (!rateNode.isMissingNode() && !rateNode.isNull()) {
-            try {
-                return new BigDecimal(rateNode.asText());
-            } catch (NumberFormatException e) {
-                log.warn("Failed to parse profile.dailyRate: {}", rateNode.asText());
+                log.debug("Could not parse profile.dailyRate");
             }
         }
         
@@ -212,183 +376,101 @@ public class ProUnityImportService {
     }
     
     private LocalDate extractApplicationDate(JsonNode candidateNode) {
-        // Try different date fields
-        String dateStr = candidateNode.path("appliedDate").asText();
-        if (dateStr == null || dateStr.isEmpty()) {
-            dateStr = candidateNode.path("createdDate").asText();
-        }
-        if (dateStr == null || dateStr.isEmpty()) {
-            dateStr = candidateNode.path("submittedDate").asText();
-        }
+        String[] dateFields = {"appliedDate", "createdDate", "submittedDate", "applicationDate", "date"};
         
-        if (dateStr != null && !dateStr.isEmpty()) {
-            try {
-                // Parse ISO date format (e.g., "2026-01-28T10:44:53.73")
-                LocalDateTime dateTime = LocalDateTime.parse(dateStr, DateTimeFormatter.ISO_DATE_TIME);
-                return dateTime.toLocalDate();
-            } catch (Exception e) {
-                log.warn("Failed to parse date '{}', trying alternative formats", dateStr);
+        for (String fieldName : dateFields) {
+            String dateStr = candidateNode.path(fieldName).asText();
+            if (dateStr != null && !dateStr.isEmpty()) {
                 try {
-                    // Try just date format
-                    return LocalDate.parse(dateStr, DateTimeFormatter.ISO_DATE);
-                } catch (Exception e2) {
-                    log.warn("Failed to parse date: {}", dateStr);
+                    return LocalDateTime.parse(dateStr, DateTimeFormatter.ISO_DATE_TIME).toLocalDate();
+                } catch (Exception e1) {
+                    try {
+                        return LocalDate.parse(dateStr, DateTimeFormatter.ISO_DATE);
+                    } catch (Exception e2) {
+                        // Try next field
+                    }
                 }
             }
         }
         
-        // Default to today
         return LocalDate.now();
     }
     
     private Application.ApplicationStatus mapStatus(JsonNode candidateNode) {
-        String statusLabel = candidateNode.path("statusLabel").asText();
-        String statusId = candidateNode.path("statusId").asText();
-        
-        if (statusLabel == null || statusLabel.isEmpty()) {
-            statusLabel = statusId;
-        }
-        
-        if (statusLabel == null || statusLabel.isEmpty()) {
+        String statusLabel = candidateNode.path("status").asText();
+        String statusLower = statusLabel.toLowerCase();
+        // CV_RECEIVED CV_REVIEWED APPROVED_FOR_MISSION REJECTED
+
+        if (statusLower.contains("notpreselected") || statusLower.contains("signed")) {
             return Application.ApplicationStatus.CV_RECEIVED;
         }
-        
-        // Map Pro-Unity status to our status
-        String statusLower = statusLabel.toLowerCase();
-        
-        // Contracting/Selected statuses
-        if (statusLower.contains("contract") || statusLower.contains("selected")) {
-            if (statusLower.contains("signed")) {
-                return Application.ApplicationStatus.APPROVED_FOR_MISSION;
-            }
-            return Application.ApplicationStatus.APPROVED_FOR_MISSION;
+        else if (statusLower.contains("selected") || statusLower.contains("approved")) {
+            return Application.ApplicationStatus.CV_REVIEWED;
         }
-        
-        // Rejected/Withdrawn statuses
-        if (statusLower.contains("reject") || statusLower.contains("declined") || 
-            statusLower.contains("withdrawn") || statusLower.contains("refused")) {
+        else if (statusLower.contains("reject") || statusLower.contains("declined")) {
             return Application.ApplicationStatus.REJECTED;
         }
-        
-        // Interview statuses
-        if (statusLower.contains("interview")) {
+        else if (statusLower.contains("withdrawn") || statusLower.contains("refused")) {
+            return Application.ApplicationStatus.REJECTED;
+        }
+        else if (statusLower.contains("interview")) {
             return Application.ApplicationStatus.REMOTE_INTERVIEW;
         }
-        
-        // Shortlist/Longlist statuses
-        if (statusLower.contains("shortlist")) {
+        if (statusLower.contains("shortlist") || statusLower.contains("preselected")) {
             return Application.ApplicationStatus.CV_REVIEWED;
         }
-        
-        if (statusLower.contains("longlist")) {
+        else if (statusLower.contains("longlist") || statusLower.contains("pinned")) {
             return Application.ApplicationStatus.CV_REVIEWED;
         }
-        
-        // Pre-selected/Applied statuses
-        if (statusLower.contains("preselected") || statusLower.contains("pinned")) {
-            return Application.ApplicationStatus.CV_REVIEWED;
-        }
-        
-        // On Hold
-        if (statusLower.contains("hold")) {
+        else if (statusLower.contains("hold")) {
             return Application.ApplicationStatus.ON_HOLD;
         }
-        
-        // Default for "Applied" or unknown
+    
         return Application.ApplicationStatus.CV_RECEIVED;
     }
     
     private String extractEvaluationNotes(JsonNode candidateNode) {
         StringBuilder notes = new StringBuilder();
         
-        // Add status information
         String statusLabel = candidateNode.path("statusLabel").asText();
         if (statusLabel != null && !statusLabel.isEmpty()) {
-            notes.append("Pro-Unity Status: ").append(statusLabel).append("\n\n");
+            notes.append("Status: ").append(statusLabel).append("\n");
         }
         
-        // Add supplier information if available
         JsonNode supplierNode = candidateNode.path("supplier");
-        if (!supplierNode.isMissingNode()) {
-            String supplierName = supplierNode.path("name").asText();
-            if (supplierName != null && !supplierName.isEmpty()) {
-                notes.append("Supplier: ").append(supplierName).append("\n");
-            }
+        if (!supplierNode.isMissingNode() && supplierNode.has("name")) {
+            notes.append("Supplier: ").append(supplierNode.get("name").asText()).append("\n");
         }
         
-        // Add comments if available
         JsonNode commentsNode = candidateNode.path("comments");
         if (commentsNode.isArray() && commentsNode.size() > 0) {
             notes.append("\nComments:\n");
             for (JsonNode comment : commentsNode) {
                 String text = comment.path("text").asText();
-                String author = comment.path("author").asText();
-                String date = comment.path("createdDate").asText();
-                
                 if (text != null && !text.isEmpty()) {
-                    notes.append("- ").append(text);
-                    if (author != null && !author.isEmpty()) {
-                        notes.append(" (by ").append(author);
-                        if (date != null && !date.isEmpty()) {
-                            notes.append(" on ").append(date);
-                        }
-                        notes.append(")");
-                    }
-                    notes.append("\n");
+                    notes.append("- ").append(text).append("\n");
                 }
             }
         }
         
-        // Add evaluation/score if available
-        JsonNode scoreNode = candidateNode.path("score");
-        if (!scoreNode.isMissingNode() && !scoreNode.isNull()) {
-            notes.append("\nScore: ").append(scoreNode.asText()).append("\n");
-        }
-        
-        // Add matching score if available
-        JsonNode matchingNode = candidateNode.path("matching");
-        if (!matchingNode.isMissingNode()) {
-            JsonNode percentageNode = matchingNode.path("percentage");
-            if (!percentageNode.isMissingNode()) {
-                notes.append("Matching: ").append(percentageNode.asText()).append("%\n");
-            }
-        }
-        
-        return notes.toString().trim();
+        return notes.length() > 0 ? notes.toString().trim() : null;
     }
     
     private String extractConclusion(JsonNode candidateNode) {
-        // Try to get conclusion from various fields
         String conclusion = candidateNode.path("conclusion").asText();
         if (conclusion != null && !conclusion.isEmpty()) {
             return conclusion;
         }
         
-        // Check if rejected with reason
         JsonNode rejectionNode = candidateNode.path("rejectionReason");
-        if (!rejectionNode.isMissingNode() && !rejectionNode.isNull()) {
+        if (!rejectionNode.isMissingNode() && !rejectionNode.asText().isEmpty()) {
             return "Rejected: " + rejectionNode.asText();
-        }
-        
-        // Check status-based conclusion
-        String statusLabel = candidateNode.path("statusLabel").asText();
-        if (statusLabel != null && !statusLabel.isEmpty()) {
-            String statusLower = statusLabel.toLowerCase();
-            if (statusLower.contains("signed") || statusLower.contains("contracted")) {
-                return "Contract signed";
-            } else if (statusLower.contains("selected")) {
-                return "Selected for mission";
-            } else if (statusLower.contains("rejected")) {
-                return "Not selected";
-            }
         }
         
         return null;
     }
     
-    /**
-     * Result object for Pro-Unity import operations
-     */
+    // Inner classes for result
     public static class ImportResult {
         private int successCount = 0;
         private int skippedCount = 0;
@@ -427,9 +509,6 @@ public class ProUnityImportService {
         }
     }
     
-    /**
-     * Import error details
-     */
     public static class ImportError {
         private final int lineNumber;
         private final String message;
