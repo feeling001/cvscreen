@@ -15,7 +15,9 @@ import com.cvscreen.repository.JobRepository;
 import com.cvscreen.specification.ApplicationSpecification;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +28,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -44,6 +47,15 @@ public class ApplicationService {
     
     @Transactional(readOnly = true)
     public Page<ApplicationDTO> getAllApplicationsPaginated(Pageable pageable) {
+        String sortProperty = pageable.getSort().iterator().hasNext() 
+            ? pageable.getSort().iterator().next().getProperty() 
+            : null;
+        
+        // Check if sorting by computed fields (candidateName or averageRating)
+        if ("candidateName".equals(sortProperty) || "averageRating".equals(sortProperty)) {
+            return getAllApplicationsWithCustomSort(null, null, null, null, null, pageable);
+        }
+        
         return applicationRepository.findAll(pageable).map(this::convertToDTO);
     }
     
@@ -65,6 +77,15 @@ public class ApplicationService {
     public Page<ApplicationDTO> searchApplicationsPaginated(String candidateName, String jobReference, 
                                                            String companyName, String roleCategory, 
                                                            String status, Pageable pageable) {
+        String sortProperty = pageable.getSort().iterator().hasNext() 
+            ? pageable.getSort().iterator().next().getProperty() 
+            : null;
+        
+        // Check if sorting by computed fields
+        if ("candidateName".equals(sortProperty) || "averageRating".equals(sortProperty)) {
+            return getAllApplicationsWithCustomSort(candidateName, jobReference, companyName, roleCategory, status, pageable);
+        }
+        
         Specification<Application> spec = ApplicationSpecification.searchApplications(
             candidateName, 
             jobReference, 
@@ -74,6 +95,57 @@ public class ApplicationService {
         );
         
         return applicationRepository.findAll(spec, pageable).map(this::convertToDTO);
+    }
+    
+    /**
+     * Custom method to handle sorting by candidateName or averageRating
+     */
+    @Transactional(readOnly = true)
+    public Page<ApplicationDTO> getAllApplicationsWithCustomSort(
+            String candidateName, String jobReference, String companyName, 
+            String roleCategory, String status, Pageable pageable) {
+        
+        // Get all applications matching the filters (without pagination for sorting)
+        Specification<Application> spec = ApplicationSpecification.searchApplications(
+            candidateName, jobReference, companyName, roleCategory, status
+        );
+        
+        List<Application> allApplications = applicationRepository.findAll(spec);
+        
+        // Convert to DTOs
+        List<ApplicationDTO> dtos = allApplications.stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+        
+        // Apply custom sorting
+        String sortProperty = pageable.getSort().iterator().hasNext() 
+            ? pageable.getSort().iterator().next().getProperty() 
+            : "applicationDate";
+        boolean ascending = pageable.getSort().iterator().hasNext() 
+            ? pageable.getSort().iterator().next().isAscending() 
+            : false;
+        
+        if ("candidateName".equals(sortProperty)) {
+            Comparator<ApplicationDTO> comparator = Comparator.comparing(
+                dto -> dto.getCandidateName() != null ? dto.getCandidateName().toLowerCase() : "",
+                ascending ? Comparator.naturalOrder() : Comparator.reverseOrder()
+            );
+            dtos.sort(comparator);
+        } else if ("averageRating".equals(sortProperty)) {
+            Comparator<ApplicationDTO> comparator = Comparator.comparing(
+                dto -> dto.getAverageRating() != null ? dto.getAverageRating() : 0.0,
+                ascending ? Comparator.naturalOrder() : Comparator.reverseOrder()
+            );
+            dtos.sort(comparator);
+        }
+        
+        // Apply pagination manually
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), dtos.size());
+        
+        List<ApplicationDTO> pageContent = dtos.subList(start, end);
+        
+        return new PageImpl<>(pageContent, pageable, dtos.size());
     }
     
     @Transactional(readOnly = true)

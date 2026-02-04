@@ -73,7 +73,7 @@
     <ng-container matColumnDef="applicationCount">
       <th mat-header-cell *matHeaderCellDef mat-sort-header>Applications</th>
       <td mat-cell *matCellDef="let candidate">
-        <a class="link" (click)="navigateToApplications(candidate.fullName)" 
+        <a class="link" (click)="navigateToApplications(candidate.fullName, $event)" 
            matTooltip="View applications for this candidate">
           {{ candidate.applicationCount || 0 }}
         </a>
@@ -166,7 +166,7 @@
             <span *ngIf="!selectedCandidate.contractType">Not specified</span>
           </p>
           <p><strong>Total Applications:</strong> 
-            <a class="link" (click)="navigateToApplications(selectedCandidate.fullName!)">
+            <a class="link" (click)="navigateToApplications(selectedCandidate.fullName!, $event)">
               {{ selectedCandidate.applicationCount || 0 }}
             </a>
           </p>

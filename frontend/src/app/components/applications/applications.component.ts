@@ -78,15 +78,20 @@ export class ApplicationsComponent implements OnInit {
   ngOnInit(): void {
     this.loadCompanies();
     
+    // Check for query parameters - CORRECTED to handle candidateName
     this.route.queryParams.subscribe(params => {
       const jobReference = params['jobReference'];
       const companyName = params['companyName'];
+      const candidateName = params['candidateName']; // ADDED
       
       if (jobReference) {
         this.filterJobReference = jobReference;
         this.applyFilters();
       } else if (companyName) {
         this.filterCompany = companyName;
+        this.applyFilters();
+      } else if (candidateName) { // ADDED
+        this.searchTerm = candidateName;
         this.applyFilters();
       } else {
         this.loadApplications();

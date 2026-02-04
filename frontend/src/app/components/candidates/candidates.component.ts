@@ -169,11 +169,17 @@ export class CandidatesComponent implements OnInit {
     this.selectedCandidate = null;
   }
   
-  // Navigate to applications page with candidate filter
-  navigateToApplications(candidateName: string): void {
+  // Navigate to applications page with candidate filter - CORRECTED
+  navigateToApplications(candidateName: string, event?: Event): void {
+    if (event) {
+      event.preventDefault();
+      event.stopPropagation();
+    }
+    
     if (candidateName) {
+      // Navigate to applications with the candidate name as a query parameter
       this.router.navigate(['/dashboard/applications'], {
-        queryParams: { candidateName }
+        queryParams: { candidateName: candidateName }
       });
     }
   }

@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/candidates")
@@ -94,11 +95,40 @@ public class CandidateController {
     
     @PostMapping("/merge")
     public ResponseEntity<CandidateDTO> mergeCandidates(@RequestBody Map<String, Object> request) {
-        Long targetCandidateId = Long.valueOf(request.get("targetCandidateId").toString());
+        // Convert targetCandidateId to Long properly
+        Long targetCandidateId = convertToLong(request.get("targetCandidateId"));
+        
+        // Convert candidateIdsToMerge to List<Long> properly
         @SuppressWarnings("unchecked")
-        List<Long> candidateIdsToMerge = (List<Long>) request.get("candidateIdsToMerge");
+        List<Object> candidateIdsObj = (List<Object>) request.get("candidateIdsToMerge");
+        List<Long> candidateIdsToMerge = candidateIdsObj.stream()
+                .map(this::convertToLong)
+                .collect(Collectors.toList());
+        
         String mergedGlobalNotes = (String) request.get("mergedGlobalNotes");
         
         return ResponseEntity.ok(candidateService.mergeCandidates(targetCandidateId, candidateIdsToMerge, mergedGlobalNotes));
+    }
+    
+    /**
+     * Helper method to convert Object to Long (handles both Integer and Long)
+     */
+    private Long convertToLong(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Long) {
+            return (Long) value;
+        }
+        if (value instanceof Integer) {
+            return ((Integer) value).longValue();
+        }
+        if (value instanceof String) {
+            return Long.parseLong((String) value);
+        }
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        throw new IllegalArgumentException("Cannot convert " + value.getClass() + " to Long");
     }
 }
