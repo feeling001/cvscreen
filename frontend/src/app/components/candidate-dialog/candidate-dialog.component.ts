@@ -5,6 +5,7 @@ import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/materia
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { MatButtonModule } from '@angular/material/button';
+import { MatSelectModule } from '@angular/material/select';
 import { Candidate } from '../../models/candidate.model';
 
 @Component({
@@ -16,7 +17,8 @@ import { Candidate } from '../../models/candidate.model';
     MatDialogModule,
     MatFormFieldModule,
     MatInputModule,
-    MatButtonModule
+    MatButtonModule,
+    MatSelectModule
   ],
   template: `
     <h2 mat-dialog-title>{{ data ? 'Edit Candidate' : 'New Candidate' }}</h2>
@@ -30,6 +32,15 @@ import { Candidate } from '../../models/candidate.model';
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Last Name</mat-label>
           <input matInput [(ngModel)]="candidate.lastName" required>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Contract Type</mat-label>
+          <mat-select [(ngModel)]="candidate.contractType">
+            <mat-option [value]="null">Not specified</mat-option>
+            <mat-option value="Subcontractor">Subcontractor</mat-option>
+            <mat-option value="Freelancer">Freelancer</mat-option>
+          </mat-select>
         </mat-form-field>
 
         <mat-form-field appearance="outline" class="full-width">
@@ -70,6 +81,7 @@ export class CandidateDialogComponent {
     this.candidate = data ? { ...data } : {
       firstName: '',
       lastName: '',
+      contractType: '',
       globalNotes: ''
     };
   }

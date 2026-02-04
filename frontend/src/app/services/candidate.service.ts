@@ -80,4 +80,12 @@ export class CandidateService {
   deleteCandidate(id: number): Observable<void> {
     return this.http.delete<void>(`${this.API_URL}/${id}`);
   }
+  
+  mergeCandidates(targetCandidateId: number, candidateIdsToMerge: number[], mergedGlobalNotes: string): Observable<Candidate> {
+    return this.http.post<Candidate>(`${this.API_URL}/merge`, {
+      targetCandidateId,
+      candidateIdsToMerge,
+      mergedGlobalNotes
+    });
+  }
 }

@@ -91,4 +91,14 @@ public class CandidateController {
         candidateService.deleteCandidate(id);
         return ResponseEntity.noContent().build();
     }
+    
+    @PostMapping("/merge")
+    public ResponseEntity<CandidateDTO> mergeCandidates(@RequestBody Map<String, Object> request) {
+        Long targetCandidateId = Long.valueOf(request.get("targetCandidateId").toString());
+        @SuppressWarnings("unchecked")
+        List<Long> candidateIdsToMerge = (List<Long>) request.get("candidateIdsToMerge");
+        String mergedGlobalNotes = (String) request.get("mergedGlobalNotes");
+        
+        return ResponseEntity.ok(candidateService.mergeCandidates(targetCandidateId, candidateIdsToMerge, mergedGlobalNotes));
+    }
 }

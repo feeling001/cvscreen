@@ -1,7 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute } from '@angular/router';
+import { Router, ActivatedRoute } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -15,9 +15,13 @@ import { MatPaginatorModule, PageEvent } from '@angular/material/paginator';
 import { MatSelectModule } from '@angular/material/select';
 import { MatSortModule, Sort } from '@angular/material/sort';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDividerModule } from '@angular/material/divider';
+import { MatChipsModule } from '@angular/material/chips';
 import { CandidateService } from '../../services/candidate.service';
 import { Candidate } from '../../models/candidate.model';
 import { CandidateDialogComponent } from '../candidate-dialog/candidate-dialog.component';
+import { CandidateMergeDialogComponent } from '../candidate-merge-dialog/candidate-merge-dialog.component';
 
 @Component({
   selector: 'app-candidates',
@@ -37,7 +41,10 @@ import { CandidateDialogComponent } from '../candidate-dialog/candidate-dialog.c
     MatPaginatorModule,
     MatSelectModule,
     MatSortModule,
-    MatTooltipModule
+    MatTooltipModule,
+    MatCheckboxModule,
+    MatDividerModule,
+    MatChipsModule
   ],
   templateUrl: './candidates.component.html',
   styleUrls: ['./candidates.component.css']
@@ -45,9 +52,13 @@ import { CandidateDialogComponent } from '../candidate-dialog/candidate-dialog.c
 export class CandidatesComponent implements OnInit {
   candidates: Candidate[] = [];
   selectedCandidate: Candidate | null = null;
-  displayedColumns: string[] = ['firstName', 'lastName', 'applicationCount', 'reviewCount', 'averageRating', 'actions'];
+  displayedColumns: string[] = ['select', 'firstName', 'lastName', 'contractType', 'applicationCount', 'reviewCount', 'averageRating', 'actions'];
   applicationColumns: string[] = ['jobReference', 'roleCategory', 'companyName', 'status', 'applicationDate'];
+  commentColumns: string[] = ['user', 'rating', 'comment', 'context', 'date'];
   searchTerm = '';
+  
+  // Selection for merge
+  selectedCandidateIds: Set<number> = new Set();
   
   // Pagination
   currentPage = 0;
@@ -64,7 +75,8 @@ export class CandidatesComponent implements OnInit {
     private candidateService: CandidateService,
     private snackBar: MatSnackBar,
     private dialog: MatDialog,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
@@ -155,6 +167,67 @@ export class CandidatesComponent implements OnInit {
 
   closeDetails(): void {
     this.selectedCandidate = null;
+  }
+  
+  // Navigate to applications page with candidate filter
+  navigateToApplications(candidateName: string): void {
+    if (candidateName) {
+      this.router.navigate(['/dashboard/applications'], {
+        queryParams: { candidateName }
+      });
+    }
+  }
+  
+  // Selection management
+  toggleSelection(candidateId: number): void {
+    if (this.selectedCandidateIds.has(candidateId)) {
+      this.selectedCandidateIds.delete(candidateId);
+    } else {
+      this.selectedCandidateIds.add(candidateId);
+    }
+  }
+  
+  isSelected(candidateId: number): boolean {
+    return this.selectedCandidateIds.has(candidateId);
+  }
+  
+  clearSelection(): void {
+    this.selectedCandidateIds.clear();
+  }
+  
+  // Merge candidates
+  openMergeDialog(): void {
+    if (this.selectedCandidateIds.size < 2) {
+      this.snackBar.open('Please select at least 2 candidates to merge', 'Close', { duration: 3000 });
+      return;
+    }
+    
+    const selectedCandidates = this.candidates.filter(c => c.id && this.selectedCandidateIds.has(c.id));
+    
+    const dialogRef = this.dialog.open(CandidateMergeDialogComponent, {
+      width: '600px',
+      data: selectedCandidates
+    });
+    
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.performMerge(result.targetCandidateId, result.candidateIds, result.mergedNotes);
+      }
+    });
+  }
+  
+  performMerge(targetId: number, candidateIds: number[], mergedNotes: string): void {
+    this.candidateService.mergeCandidates(targetId, candidateIds, mergedNotes).subscribe({
+      next: () => {
+        this.snackBar.open('Candidates merged successfully', 'Close', { duration: 3000 });
+        this.clearSelection();
+        this.loadCandidates();
+        this.selectedCandidate = null;
+      },
+      error: (error) => {
+        this.snackBar.open('Failed to merge candidates: ' + error.error?.message, 'Close', { duration: 5000 });
+      }
+    });
   }
 
   openCreateDialog(): void {

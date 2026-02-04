@@ -26,6 +26,9 @@ public class Candidate {
     @Column(name = "last_name", nullable = false)
     private String lastName;
     
+    @Column(name = "contract_type", length = 16)
+    private String contractType; // "Subcontractor" or "Freelancer"
+    
     @Column(name = "global_notes", columnDefinition = "TEXT")
     private String globalNotes;
     

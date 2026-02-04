@@ -4,8 +4,10 @@ import com.cvscreen.dto.*;
 import com.cvscreen.entity.Candidate;
 import com.cvscreen.exception.ResourceNotFoundException;
 import com.cvscreen.repository.ApplicationCommentRepository;
+import com.cvscreen.repository.ApplicationRepository;
 import com.cvscreen.repository.CandidateRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -16,10 +18,13 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CandidateService {
     
     private final CandidateRepository candidateRepository;
+    private final ApplicationRepository applicationRepository;
     private final ApplicationCommentRepository commentRepository;
+    private final ApplicationCommentService commentService;
     
     @Transactional(readOnly = true)
     public Page<CandidateDTO> getAllCandidatesPaginated(Pageable pageable) {
@@ -43,6 +48,11 @@ public class CandidateService {
             .map(this::convertToApplicationSummary)
             .collect(Collectors.toList()));
         
+        // Get all comments for this candidate across all applications
+        dto.setAllComments(commentRepository.findByCandidateIdWithDetails(id).stream()
+            .map(comment -> commentService.convertCommentToDTO(comment, false))
+            .collect(Collectors.toList()));
+        
         return dto;
     }
     
@@ -63,6 +73,7 @@ public class CandidateService {
         Candidate candidate = new Candidate();
         candidate.setFirstName(request.getFirstName());
         candidate.setLastName(request.getLastName());
+        candidate.setContractType(request.getContractType());
         candidate.setGlobalNotes(request.getGlobalNotes());
         
         candidate = candidateRepository.save(candidate);
@@ -76,6 +87,7 @@ public class CandidateService {
         
         candidate.setFirstName(request.getFirstName());
         candidate.setLastName(request.getLastName());
+        candidate.setContractType(request.getContractType());
         candidate.setGlobalNotes(request.getGlobalNotes());
         
         candidate = candidateRepository.save(candidate);
@@ -90,6 +102,41 @@ public class CandidateService {
         candidateRepository.deleteById(id);
     }
     
+    @Transactional
+    public CandidateDTO mergeCandidates(Long targetCandidateId, List<Long> candidateIdsToMerge, String mergedGlobalNotes) {
+        log.info("Merging candidates {} into target candidate {}", candidateIdsToMerge, targetCandidateId);
+        
+        // Get target candidate
+        Candidate targetCandidate = candidateRepository.findById(targetCandidateId)
+            .orElseThrow(() -> new ResourceNotFoundException("Target candidate not found with id: " + targetCandidateId));
+        
+        // Update global notes
+        targetCandidate.setGlobalNotes(mergedGlobalNotes);
+        
+        // Merge all applications from other candidates to target
+        for (Long candidateId : candidateIdsToMerge) {
+            if (candidateId.equals(targetCandidateId)) {
+                continue; // Skip target candidate
+            }
+            
+            Candidate candidateToMerge = candidateRepository.findById(candidateId)
+                .orElseThrow(() -> new ResourceNotFoundException("Candidate to merge not found with id: " + candidateId));
+            
+            // Transfer all applications to target candidate
+            applicationRepository.updateCandidateForApplications(candidateId, targetCandidateId);
+            
+            log.info("Transferred {} applications from candidate {} to {}", 
+                    candidateToMerge.getApplications().size(), candidateId, targetCandidateId);
+            
+            // Delete the merged candidate
+            candidateRepository.deleteById(candidateId);
+        }
+        
+        // Save and return updated target candidate
+        targetCandidate = candidateRepository.save(targetCandidate);
+        return getCandidateById(targetCandidateId);
+    }
+    
     public Candidate findOrCreateCandidate(String firstName, String lastName) {
         return candidateRepository.findByFirstNameAndLastName(firstName, lastName)
             .orElseGet(() -> {
@@ -100,12 +147,32 @@ public class CandidateService {
             });
     }
     
+    public Candidate findOrCreateCandidateWithContractType(String firstName, String lastName, String contractType) {
+        return candidateRepository.findByFirstNameAndLastName(firstName, lastName)
+            .map(candidate -> {
+                // Update contract type if provided and not already set
+                if (contractType != null && !contractType.isEmpty() && candidate.getContractType() == null) {
+                    candidate.setContractType(contractType);
+                    return candidateRepository.save(candidate);
+                }
+                return candidate;
+            })
+            .orElseGet(() -> {
+                Candidate newCandidate = new Candidate();
+                newCandidate.setFirstName(firstName);
+                newCandidate.setLastName(lastName);
+                newCandidate.setContractType(contractType);
+                return candidateRepository.save(newCandidate);
+            });
+    }
+    
     private CandidateDTO convertToDTO(Candidate candidate) {
         CandidateDTO dto = new CandidateDTO();
         dto.setId(candidate.getId());
         dto.setFirstName(candidate.getFirstName());
         dto.setLastName(candidate.getLastName());
         dto.setFullName(candidate.getFullName());
+        dto.setContractType(candidate.getContractType());
         dto.setGlobalNotes(candidate.getGlobalNotes());
         dto.setCreatedAt(candidate.getCreatedAt());
         dto.setUpdatedAt(candidate.getUpdatedAt());

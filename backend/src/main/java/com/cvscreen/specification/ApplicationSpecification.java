@@ -29,7 +29,7 @@ public class ApplicationSpecification {
                 root.fetch("company", JoinType.LEFT);
             }
             
-            // Candidate name search
+            // Candidate name search - FIXED: use firstName and lastName fields
             if (candidateName != null && !candidateName.trim().isEmpty()) {
                 Join<Application, Candidate> candidateJoin = root.join("candidate", JoinType.LEFT);
                 Expression<String> fullName = criteriaBuilder.concat(

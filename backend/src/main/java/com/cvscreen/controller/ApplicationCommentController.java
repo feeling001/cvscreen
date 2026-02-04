@@ -40,6 +40,16 @@ public class ApplicationCommentController {
                 .body(commentService.createComment(applicationId, username, request));
     }
     
+    @PutMapping("/{commentId}")
+    public ResponseEntity<ApplicationCommentDTO> updateComment(
+            @PathVariable Long applicationId,
+            @PathVariable Long commentId,
+            @Valid @RequestBody CreateCommentRequest request,
+            Authentication authentication) {
+        String username = authentication.getName();
+        return ResponseEntity.ok(commentService.updateComment(commentId, username, request));
+    }
+    
     @DeleteMapping("/{commentId}")
     public ResponseEntity<Void> deleteComment(@PathVariable Long commentId) {
         commentService.deleteComment(commentId);

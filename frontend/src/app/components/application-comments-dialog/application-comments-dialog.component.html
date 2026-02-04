@@ -1,0 +1,191 @@
+<h2 mat-dialog-title>
+  <mat-icon>comment</mat-icon>
+  Comments for Application
+</h2>
+
+<mat-dialog-content>
+  <!-- Add Comment Section -->
+  <div class="add-comment-section">
+    <mat-form-field appearance="outline" class="full-width">
+      <mat-label>Add a comment</mat-label>
+      <textarea 
+        matInput 
+        [(ngModel)]="newComment" 
+        rows="3"
+        placeholder="Enter your comment here..."
+        [disabled]="loading">
+      </textarea>
+    </mat-form-field>
+    
+    <div class="rating-section">
+      <label>Rating (optional):</label>
+      <div class="stars">
+        <mat-icon 
+          *ngFor="let star of [1, 2, 3, 4, 5]" 
+          (click)="setRating(star)"
+          [class.filled]="star <= newRating"
+          [class.clickable]="!loading"
+          matTooltip="{{ star }} star{{ star > 1 ? 's' : '' }}">
+          {{ star <= newRating ? 'star' : 'star_border' }}
+        </mat-icon>
+        <button 
+          mat-icon-button 
+          *ngIf="newRating" 
+          (click)="clearRating()"
+          matTooltip="Clear rating"
+          [disabled]="loading">
+          <mat-icon>clear</mat-icon>
+        </button>
+      </div>
+    </div>
+    
+    <button 
+      mat-raised-button 
+      color="primary" 
+      (click)="addComment()"
+      [disabled]="!newComment.trim() || loading">
+      <mat-icon>add</mat-icon>
+      Add Comment
+    </button>
+  </div>
+  
+  <mat-divider class="divider"></mat-divider>
+  
+  <!-- Comments List -->
+  <div class="comments-section">
+    <h3>All Comments for Candidate ({{ comments.length }})</h3>
+    
+    <div *ngIf="loading" class="loading-container">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+    
+    <div *ngIf="!loading && comments.length === 0" class="no-comments">
+      <mat-icon>chat_bubble_outline</mat-icon>
+      <p>No comments yet. Be the first to add one!</p>
+    </div>
+    
+    <mat-list *ngIf="!loading && comments.length > 0">
+      <mat-list-item *ngFor="let comment of comments" class="comment-item">
+        <div class="comment-content">
+          <div class="comment-header">
+            <div class="comment-author">
+              <mat-icon>person</mat-icon>
+              <strong>{{ comment.displayName || comment.username }}</strong>
+              
+              <!-- Application context indicator -->
+              <mat-chip 
+                *ngIf="comment.currentApplication" 
+                class="current-app-chip"
+                matTooltip="Comment on this application">
+                Current Application
+              </mat-chip>
+              <mat-chip 
+                *ngIf="!comment.currentApplication && comment.jobReference" 
+                class="other-app-chip"
+                matTooltip="Comment on another application">
+                {{ comment.jobReference }} - {{ comment.roleCategory }}
+              </mat-chip>
+              <mat-chip 
+                *ngIf="!comment.currentApplication && !comment.jobReference" 
+                class="other-app-chip"
+                matTooltip="Comment on spontaneous application">
+                Spontaneous - {{ comment.roleCategory }}
+              </mat-chip>
+            </div>
+            <div class="comment-actions">
+              <span class="comment-date">{{ comment.createdAt | date:'short' }}</span>
+              
+              <!-- Edit button (only for own comments on current application) -->
+              <button 
+                *ngIf="isOwnComment(comment) && comment.currentApplication && !isEditing(comment)"
+                mat-icon-button 
+                color="primary" 
+                (click)="startEditing(comment)"
+                matTooltip="Edit comment">
+                <mat-icon>edit</mat-icon>
+              </button>
+              
+              <!-- Delete button -->
+              <button 
+                *ngIf="isOwnComment(comment) && comment.currentApplication"
+                mat-icon-button 
+                color="warn" 
+                (click)="deleteComment(comment.id!)"
+                matTooltip="Delete comment">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+          
+          <!-- Display mode -->
+          <div *ngIf="!isEditing(comment)">
+            <!-- Rating display -->
+            <div class="comment-rating" *ngIf="comment.rating">
+              <mat-icon 
+                *ngFor="let star of [1, 2, 3, 4, 5]"
+                [class.filled]="star <= comment.rating!"
+                class="small-star">
+                {{ star <= comment.rating! ? 'star' : 'star_border' }}
+              </mat-icon>
+              <span class="rating-text">({{ comment.rating }}/5)</span>
+            </div>
+            
+            <p class="comment-text">{{ comment.comment }}</p>
+          </div>
+          
+          <!-- Edit mode -->
+          <div *ngIf="isEditing(comment)" class="edit-mode">
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Edit comment</mat-label>
+              <textarea 
+                matInput 
+                [(ngModel)]="editingCommentText" 
+                rows="3">
+              </textarea>
+            </mat-form-field>
+            
+            <div class="rating-section">
+              <label>Rating:</label>
+              <div class="stars">
+                <mat-icon 
+                  *ngFor="let star of [1, 2, 3, 4, 5]" 
+                  (click)="setEditingRating(star)"
+                  [class.filled]="star <= editingCommentRating"
+                  [class.clickable]="true"
+                  matTooltip="{{ star }} star{{ star > 1 ? 's' : '' }}">
+                  {{ star <= editingCommentRating ? 'star' : 'star_border' }}
+                </mat-icon>
+                <button 
+                  mat-icon-button 
+                  *ngIf="editingCommentRating" 
+                  (click)="clearEditingRating()"
+                  matTooltip="Clear rating">
+                  <mat-icon>clear</mat-icon>
+                </button>
+              </div>
+            </div>
+            
+            <div class="edit-actions">
+              <button mat-button (click)="cancelEditing()">
+                Cancel
+              </button>
+              <button 
+                mat-raised-button 
+                color="primary" 
+                (click)="updateComment(comment.id!)"
+                [disabled]="!editingCommentText.trim()">
+                <mat-icon>check</mat-icon>
+                Update
+              </button>
+            </div>
+          </div>
+        </div>
+        <mat-divider></mat-divider>
+      </mat-list-item>
+    </mat-list>
+  </div>
+</mat-dialog-content>
+
+<mat-dialog-actions align="end">
+  <button mat-button (click)="onClose()">Close</button>
+</mat-dialog-actions>

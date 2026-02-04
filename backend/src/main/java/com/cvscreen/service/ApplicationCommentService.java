@@ -10,6 +10,7 @@ import com.cvscreen.repository.ApplicationCommentRepository;
 import com.cvscreen.repository.ApplicationRepository;
 import com.cvscreen.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,7 +29,7 @@ public class ApplicationCommentService {
     public List<ApplicationCommentDTO> getCommentsForApplication(Long applicationId) {
         List<ApplicationComment> comments = commentRepository.findByApplicationIdWithUser(applicationId);
         return comments.stream()
-            .map(comment -> convertToDTO(comment, true))
+            .map(comment -> convertCommentToDTO(comment, true))
             .collect(Collectors.toList());
     }
     
@@ -44,7 +45,7 @@ public class ApplicationCommentService {
         return allComments.stream()
             .map(comment -> {
                 boolean isCurrent = comment.getApplication().getId().equals(applicationId);
-                return convertToDTO(comment, isCurrent);
+                return convertCommentToDTO(comment, isCurrent);
             })
             .collect(Collectors.toList());
     }
@@ -64,7 +65,24 @@ public class ApplicationCommentService {
         comment.setRating(request.getRating());
         
         comment = commentRepository.save(comment);
-        return convertToDTO(comment, true);
+        return convertCommentToDTO(comment, true);
+    }
+    
+    @Transactional
+    public ApplicationCommentDTO updateComment(Long commentId, String username, CreateCommentRequest request) {
+        ApplicationComment comment = commentRepository.findById(commentId)
+            .orElseThrow(() -> new ResourceNotFoundException("Comment not found with id: " + commentId));
+        
+        // Verify that the user is the owner of the comment
+        if (!comment.getUser().getUsername().equals(username)) {
+            throw new AccessDeniedException("You can only edit your own comments");
+        }
+        
+        comment.setComment(request.getComment());
+        comment.setRating(request.getRating());
+        
+        comment = commentRepository.save(comment);
+        return convertCommentToDTO(comment, true);
     }
     
     @Transactional
@@ -85,7 +103,8 @@ public class ApplicationCommentService {
         return commentRepository.getAverageRatingByApplicationId(applicationId);
     }
     
-    private ApplicationCommentDTO convertToDTO(ApplicationComment comment, boolean isCurrentApplication) {
+    // Made public to be used by CandidateService
+    public ApplicationCommentDTO convertCommentToDTO(ApplicationComment comment, boolean isCurrentApplication) {
         ApplicationCommentDTO dto = new ApplicationCommentDTO();
         dto.setId(comment.getId());
         dto.setApplicationId(comment.getApplication().getId());
@@ -95,7 +114,7 @@ public class ApplicationCommentService {
         dto.setComment(comment.getComment());
         dto.setRating(comment.getRating());
         dto.setCreatedAt(comment.getCreatedAt());
-        dto.setCurrentApplication(isCurrentApplication); // Fixed: use setCurrentApplication instead of setIsCurrentApplication
+        dto.setCurrentApplication(isCurrentApplication);
         
         // Add job reference and role category for context
         if (comment.getApplication().getJob() != null) {

@@ -16,5 +16,7 @@ public class CreateCandidateRequest {
     @NotBlank(message = "Last name is required")
     private String lastName;
     
+    private String contractType; // "Subcontractor" or "Freelancer" - optional
+    
     private String globalNotes;
 }

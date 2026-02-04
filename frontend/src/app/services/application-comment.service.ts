@@ -27,6 +27,13 @@ export class ApplicationCommentService {
     );
   }
 
+  updateComment(applicationId: number, commentId: number, comment: string, rating?: number): Observable<ApplicationComment> {
+    return this.http.put<ApplicationComment>(
+      `${this.API_URL}/${applicationId}/comments/${commentId}`,
+      { comment, rating }
+    );
+  }
+
   deleteComment(applicationId: number, commentId: number): Observable<void> {
     return this.http.delete<void>(`${this.API_URL}/${applicationId}/comments/${commentId}`);
   }

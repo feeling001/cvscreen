@@ -18,6 +18,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -232,10 +233,17 @@ public class ProUnityImportService {
         
         String firstName = null;
         String lastName = null;
+        String contractType = null; // NEW: Extract contract type
         
         if (!resourceProfileNode.isMissingNode()) {
             firstName = getTextValue(resourceProfileNode, "firstName");
             lastName = getTextValue(resourceProfileNode, "lastName");
+        }
+        
+        // Extract resourceType (contract type)
+        contractType = getTextValue(candidateNode, "resourceType");
+        if (contractType != null) {
+            log.debug("Candidate #{}: Found contractType: {}", index, contractType);
         }
         
         // Fallback to fullName if firstName/lastName not found
@@ -257,11 +265,12 @@ public class ProUnityImportService {
             log.debug("Candidate #{}: Extracted from fullName '{}' → firstName='{}', lastName='{}'", 
                     index, fullName, firstName, lastName);
         } else {
-            log.debug("Candidate #{}: firstName='{}', lastName='{}'", index, firstName, lastName);
+            log.debug("Candidate #{}: firstName='{}', lastName='{}', contractType='{}'", 
+                    index, firstName, lastName, contractType);
         }
         
-        // Find or create candidate
-        Candidate candidate = candidateService.findOrCreateCandidate(firstName, lastName);
+        // Find or create candidate with contract type
+        Candidate candidate = candidateService.findOrCreateCandidateWithContractType(firstName, lastName, contractType);
         
         // Extract company information for this specific candidate
         Company company = extractCompanyForCandidate(candidateNode, index);
@@ -290,9 +299,9 @@ public class ProUnityImportService {
         applicationRepository.save(application);
         result.incrementSuccessCount();
         
-        log.info("✓ Candidate #{}: {} {} - {} ({}) - Company: {}", 
-                index, firstName, lastName, roleCategory, status, 
-                company != null ? company.getName() : "None");
+        log.info("✓ Candidate #{}: {} {} ({}) - {} ({}) - Company: {}", 
+                index, firstName, lastName, contractType != null ? contractType : "N/A", 
+                roleCategory, status, company != null ? company.getName() : "None");
     }
     
     /**
