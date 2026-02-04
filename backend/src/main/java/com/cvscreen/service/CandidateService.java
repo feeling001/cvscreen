@@ -9,10 +9,13 @@ import com.cvscreen.repository.CandidateRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,6 +31,17 @@ public class CandidateService {
     
     @Transactional(readOnly = true)
     public Page<CandidateDTO> getAllCandidatesPaginated(Pageable pageable) {
+        String sortProperty = pageable.getSort().iterator().hasNext() 
+            ? pageable.getSort().iterator().next().getProperty() 
+            : null;
+        
+        // Check if sorting by computed fields (applicationCount, reviewCount, averageRating)
+        if ("applicationCount".equals(sortProperty) || 
+            "reviewCount".equals(sortProperty) || 
+            "averageRating".equals(sortProperty)) {
+            return getAllCandidatesWithCustomSort(null, pageable);
+        }
+        
         return candidateRepository.findAll(pageable).map(this::convertToDTO);
     }
     
@@ -58,7 +72,94 @@ public class CandidateService {
     
     @Transactional(readOnly = true)
     public Page<CandidateDTO> searchCandidatesPaginated(String searchTerm, Pageable pageable) {
+        String sortProperty = pageable.getSort().iterator().hasNext() 
+            ? pageable.getSort().iterator().next().getProperty() 
+            : null;
+        
+        // Check if sorting by computed fields
+        if ("applicationCount".equals(sortProperty) || 
+            "reviewCount".equals(sortProperty) || 
+            "averageRating".equals(sortProperty)) {
+            return getAllCandidatesWithCustomSort(searchTerm, pageable);
+        }
+        
         return candidateRepository.searchByName(searchTerm, pageable).map(this::convertToDTO);
+    }
+    
+    /**
+     * Custom method to handle sorting by computed fields (applicationCount, reviewCount, averageRating)
+     */
+    @Transactional(readOnly = true)
+    public Page<CandidateDTO> getAllCandidatesWithCustomSort(String searchTerm, Pageable pageable) {
+        // Get all candidates matching the search (without pagination for sorting)
+        List<Candidate> allCandidates;
+        if (searchTerm != null && !searchTerm.trim().isEmpty()) {
+            allCandidates = candidateRepository.searchByName(searchTerm);
+        } else {
+            allCandidates = candidateRepository.findAll();
+        }
+        
+        // Convert to DTOs (which calculates the computed fields)
+        List<CandidateDTO> dtos = allCandidates.stream()
+            .map(this::convertToDTO)
+            .collect(Collectors.toList());
+        
+        // Apply custom sorting
+        String sortProperty = pageable.getSort().iterator().hasNext() 
+            ? pageable.getSort().iterator().next().getProperty() 
+            : "lastName";
+        boolean ascending = pageable.getSort().iterator().hasNext() 
+            ? pageable.getSort().iterator().next().isAscending() 
+            : true;
+        
+        if ("applicationCount".equals(sortProperty)) {
+            // Sort by application count
+            if (ascending) {
+                dtos.sort(Comparator.comparing(
+                    dto -> dto.getApplicationCount() != null ? dto.getApplicationCount() : 0,
+                    Comparator.naturalOrder()
+                ));
+            } else {
+                dtos.sort(Comparator.comparing(
+                    dto -> dto.getApplicationCount() != null ? dto.getApplicationCount() : 0,
+                    Comparator.reverseOrder()
+                ));
+            }
+        } else if ("reviewCount".equals(sortProperty)) {
+            // Sort by review count
+            if (ascending) {
+                dtos.sort(Comparator.comparing(
+                    dto -> dto.getReviewCount() != null ? dto.getReviewCount() : 0L,
+                    Comparator.naturalOrder()
+                ));
+            } else {
+                dtos.sort(Comparator.comparing(
+                    dto -> dto.getReviewCount() != null ? dto.getReviewCount() : 0L,
+                    Comparator.reverseOrder()
+                ));
+            }
+        } else if ("averageRating".equals(sortProperty)) {
+            // Sort by average rating
+            if (ascending) {
+                dtos.sort(Comparator.comparing(
+                    dto -> dto.getAverageRating() != null ? dto.getAverageRating() : 0.0,
+                    Comparator.naturalOrder()
+                ));
+            } else {
+                dtos.sort(Comparator.comparing(
+                    dto -> dto.getAverageRating() != null ? dto.getAverageRating() : 0.0,
+                    Comparator.reverseOrder()
+                ));
+            }
+        }
+        
+        // Apply pagination manually
+        int start = (int) pageable.getOffset();
+        int end = Math.min((start + pageable.getPageSize()), dtos.size());
+        
+        List<CandidateDTO> pageContent = dtos.subList(start, end);
+        
+        return new PageImpl<>(pageContent, pageable, dtos.size());
     }
     
     @Transactional(readOnly = true)

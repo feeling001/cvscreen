@@ -126,17 +126,31 @@ public class ApplicationService {
             : false;
         
         if ("candidateName".equals(sortProperty)) {
-            Comparator<ApplicationDTO> comparator = Comparator.comparing(
-                dto -> dto.getCandidateName() != null ? dto.getCandidateName().toLowerCase() : "",
-                ascending ? Comparator.naturalOrder() : Comparator.reverseOrder()
-            );
-            dtos.sort(comparator);
+            // Sort by candidate name
+            if (ascending) {
+                dtos.sort(Comparator.comparing(
+                    dto -> dto.getCandidateName() != null ? dto.getCandidateName().toLowerCase() : "",
+                    Comparator.naturalOrder()
+                ));
+            } else {
+                dtos.sort(Comparator.comparing(
+                    dto -> dto.getCandidateName() != null ? dto.getCandidateName().toLowerCase() : "",
+                    Comparator.reverseOrder()
+                ));
+            }
         } else if ("averageRating".equals(sortProperty)) {
-            Comparator<ApplicationDTO> comparator = Comparator.comparing(
-                dto -> dto.getAverageRating() != null ? dto.getAverageRating() : 0.0,
-                ascending ? Comparator.naturalOrder() : Comparator.reverseOrder()
-            );
-            dtos.sort(comparator);
+            // Sort by average rating
+            if (ascending) {
+                dtos.sort(Comparator.comparing(
+                    dto -> dto.getAverageRating() != null ? dto.getAverageRating() : 0.0,
+                    Comparator.naturalOrder()
+                ));
+            } else {
+                dtos.sort(Comparator.comparing(
+                    dto -> dto.getAverageRating() != null ? dto.getAverageRating() : 0.0,
+                    Comparator.reverseOrder()
+                ));
+            }
         }
         
         // Apply pagination manually
