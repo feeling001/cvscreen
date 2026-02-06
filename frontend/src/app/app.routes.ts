@@ -30,10 +30,6 @@ export const routes: Routes = [
         loadComponent: () => import('./components/users/users.component').then(m => m.UsersComponent)
       },
       { 
-        path: 'import', 
-        loadComponent: () => import('./components/csv-import/csv-import.component').then(m => m.CsvImportComponent)
-      },
-      { 
         path: 'import-prounity', 
         loadComponent: () => import('./components/prounity-import/prounity-import.component').then(m => m.ProunityImportComponent)
       }

@@ -2,6 +2,7 @@
 .vscode/
 *.code-workspace
 
+frontend/src/environments/environment.ts
 
 frontend/.angular/
 # frontend/package-lock.json

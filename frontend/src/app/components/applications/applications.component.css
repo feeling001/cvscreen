@@ -66,6 +66,9 @@ table {
   width: 100%;
 }
 
+/* ========== STATUS COLORS ========== */
+
+/* Row highlighting for APPROVED status */
 .approved-row {
   background-color: #e8f5e9 !important;
 }
@@ -74,20 +77,67 @@ table {
   background-color: #c8e6c9 !important;
 }
 
+/* Row highlighting for REJECTED status */
+.rejected-row {
+  background-color: #ffebee !important;
+}
+
+.rejected-row:hover {
+  background-color: #ffcdd2 !important;
+}
+
+/* Status badges with colors */
 .status-badge {
   padding: 4px 12px;
   border-radius: 12px;
   font-size: 12px;
   font-weight: 500;
-  background-color: #e0e0e0;
-  color: #333;
   display: inline-block;
+  text-transform: uppercase;
 }
 
+/* CV_RECEIVED - Blue */
+.status-badge.cv-received {
+  background-color: #2196f3;
+  color: white;
+}
+
+/* CV_REVIEWED - Indigo */
+.status-badge.cv-reviewed {
+  background-color: #3f51b5;
+  color: white;
+}
+
+/* REMOTE_INTERVIEW - Purple */
+.status-badge.remote-interview {
+  background-color: #9c27b0;
+  color: white;
+}
+
+/* ONSITE_INTERVIEW - Deep Purple */
+.status-badge.onsite-interview {
+  background-color: #673ab7;
+  color: white;
+}
+
+/* APPROVED_FOR_MISSION - Green */
 .status-badge.approved {
   background-color: #4caf50;
   color: white;
   font-weight: 600;
+}
+
+/* REJECTED - Red */
+.status-badge.rejected {
+  background-color: #f44336;
+  color: white;
+  font-weight: 600;
+}
+
+/* ON_HOLD - Orange */
+.status-badge.on-hold {
+  background-color: #ff9800;
+  color: white;
 }
 
 .approved-status {

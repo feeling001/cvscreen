@@ -203,7 +203,6 @@ public class ApplicationService {
         application.setDailyRate(request.getDailyRate());
         application.setApplicationDate(request.getApplicationDate());
         application.setConclusion(request.getConclusion());
-        application.setEvaluationNotes(request.getEvaluationNotes());
         
         if (request.getStatus() != null) {
             application.setStatus(Application.ApplicationStatus.valueOf(request.getStatus()));
@@ -246,7 +245,6 @@ public class ApplicationService {
         application.setDailyRate(request.getDailyRate());
         application.setApplicationDate(request.getApplicationDate());
         application.setConclusion(request.getConclusion());
-        application.setEvaluationNotes(request.getEvaluationNotes());
         
         if (request.getStatus() != null) {
             application.setStatus(Application.ApplicationStatus.valueOf(request.getStatus()));
@@ -312,7 +310,6 @@ public class ApplicationService {
         dto.setApplicationDate(application.getApplicationDate());
         dto.setStatus(application.getStatus().name());
         dto.setConclusion(application.getConclusion());
-        dto.setEvaluationNotes(application.getEvaluationNotes());
         dto.setCvFilePath(application.getCvFilePath());
         dto.setCreatedAt(application.getCreatedAt());
         dto.setUpdatedAt(application.getUpdatedAt());

@@ -56,9 +56,6 @@ public class Application {
     @Column(columnDefinition = "TEXT")
     private String conclusion;
     
-    @Column(name = "evaluation_notes", columnDefinition = "TEXT")
-    private String evaluationNotes;
-    
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
     

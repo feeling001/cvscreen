@@ -139,9 +139,15 @@
 
     <ng-container matColumnDef="status">
       <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
-      <td mat-cell *matCellDef="let app" 
-          [class.approved-status]="app.status === 'APPROVED_FOR_MISSION'">
-        <span class="status-badge" [class.approved]="app.status === 'APPROVED_FOR_MISSION'">
+      <td mat-cell *matCellDef="let app">
+        <span class="status-badge" 
+              [class.cv-received]="app.status === 'CV_RECEIVED'"
+              [class.cv-reviewed]="app.status === 'CV_REVIEWED'"
+              [class.remote-interview]="app.status === 'REMOTE_INTERVIEW'"
+              [class.onsite-interview]="app.status === 'ONSITE_INTERVIEW'"
+              [class.approved]="app.status === 'APPROVED_FOR_MISSION'"
+              [class.rejected]="app.status === 'REJECTED'"
+              [class.on-hold]="app.status === 'ON_HOLD'">
           {{ getStatusLabel(app.status) }}
         </span>
       </td>
@@ -202,7 +208,8 @@
 
     <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
     <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
-        [class.approved-row]="row.status === 'APPROVED_FOR_MISSION'"></tr>
+        [class.approved-row]="row.status === 'APPROVED_FOR_MISSION'"
+        [class.rejected-row]="row.status === 'REJECTED'"></tr>
   </table>
   
   <!-- Pagination -->

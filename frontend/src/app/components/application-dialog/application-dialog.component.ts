@@ -101,11 +101,6 @@ import { map, startWith } from 'rxjs/operators';
           <textarea matInput [(ngModel)]="application.conclusion" rows="3"
                     placeholder="e.g. Good profile, Maybe, Too junior"></textarea>
         </mat-form-field>
-
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Evaluation Notes</mat-label>
-          <textarea matInput [(ngModel)]="application.evaluationNotes" rows="4"></textarea>
-        </mat-form-field>
       </div>
     </mat-dialog-content>
     <mat-dialog-actions align="end">
@@ -153,8 +148,7 @@ export class ApplicationDialogComponent implements OnInit {
       dailyRate: null,
       applicationDate: new Date().toISOString().split('T')[0],
       status: 'CV_RECEIVED',
-      conclusion: '',
-      evaluationNotes: ''
+      conclusion: ''
     };
   }
 
@@ -165,7 +159,6 @@ export class ApplicationDialogComponent implements OnInit {
   }
 
   loadCandidates(): void {
-    // Utiliser la nouvelle méthode getAllCandidatesSimple() au lieu de getAllCandidates()
     this.candidateService.getAllCandidatesSimple().subscribe({
       next: (data) => {
         this.candidates = data;

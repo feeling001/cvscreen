@@ -73,8 +73,11 @@ public class ApplicationCommentService {
         ApplicationComment comment = commentRepository.findById(commentId)
             .orElseThrow(() -> new ResourceNotFoundException("Comment not found with id: " + commentId));
         
-        // Verify that the user is the owner of the comment
-        if (!comment.getUser().getUsername().equals(username)) {
+        // Check if user is admin OR the owner of the comment
+        boolean isAdmin = "admin".equals(username);
+        boolean isOwner = comment.getUser().getUsername().equals(username);
+        
+        if (!isAdmin && !isOwner) {
             throw new AccessDeniedException("You can only edit your own comments");
         }
         

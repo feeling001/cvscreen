@@ -12,7 +12,6 @@ export interface Application {
   applicationDate: string;
   status: string;
   conclusion?: string;
-  evaluationNotes?: string;
   cvFilePath?: string;
   hasReviews?: boolean;
   commentCount?: number;

@@ -43,6 +43,7 @@ export class ApplicationCommentsDialogComponent implements OnInit {
   newRating: number = 0;
   loading = false;
   currentUsername: string = '';
+  isAdmin = false;
   
   // Edit mode tracking
   editingCommentId: number | null = null;
@@ -58,6 +59,7 @@ export class ApplicationCommentsDialogComponent implements OnInit {
   ) {
     const currentUser = this.authService.getCurrentUser();
     this.currentUsername = currentUser?.username || '';
+    this.isAdmin = this.currentUsername === 'admin';
   }
 
   ngOnInit(): void {
@@ -179,6 +181,11 @@ export class ApplicationCommentsDialogComponent implements OnInit {
         this.loading = false;
       }
     });
+  }
+  
+  // Check if user can edit comment (admin or owner)
+  canEdit(comment: ApplicationComment): boolean {
+    return this.isAdmin || comment.username === this.currentUsername;
   }
   
   isOwnComment(comment: ApplicationComment): boolean {

@@ -25,7 +25,6 @@ public class ApplicationDTO {
     private LocalDate applicationDate;
     private String status;
     private String conclusion;
-    private String evaluationNotes;
     private String cvFilePath;
     private Long commentCount;
     private Double averageRating; // Average rating from comments (1-5 stars)

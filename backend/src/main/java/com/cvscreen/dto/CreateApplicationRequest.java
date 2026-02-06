@@ -32,6 +32,4 @@ public class CreateApplicationRequest {
     private String status;
     
     private String conclusion;
-    
-    private String evaluationNotes;
 }

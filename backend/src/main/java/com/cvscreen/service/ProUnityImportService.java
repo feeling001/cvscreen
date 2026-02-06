@@ -233,7 +233,7 @@ public class ProUnityImportService {
         
         String firstName = null;
         String lastName = null;
-        String contractType = null; // NEW: Extract contract type
+        String contractType = null;
         
         if (!resourceProfileNode.isMissingNode()) {
             firstName = getTextValue(resourceProfileNode, "firstName");
@@ -280,7 +280,6 @@ public class ProUnityImportService {
         BigDecimal dailyRate = extractDailyRate(candidateNode);
         LocalDate applicationDate = extractApplicationDate(candidateNode);
         Application.ApplicationStatus status = mapStatus(candidateNode);
-        String evaluationNotes = extractEvaluationNotes(candidateNode);
         String conclusion = extractConclusion(candidateNode);
         
         // Create application
@@ -293,7 +292,6 @@ public class ProUnityImportService {
         application.setDailyRate(dailyRate);
         application.setApplicationDate(applicationDate);
         application.setStatus(status);
-        application.setEvaluationNotes(evaluationNotes);
         application.setConclusion(conclusion);
         
         applicationRepository.save(application);
@@ -452,7 +450,7 @@ public class ProUnityImportService {
         return Application.ApplicationStatus.CV_RECEIVED;
     }
     
-    private String extractEvaluationNotes(JsonNode candidateNode) {
+    private String extractConclusion(JsonNode candidateNode) {
         StringBuilder notes = new StringBuilder();
         
         String statusLabel = candidateNode.path("statusLabel").asText();
@@ -476,21 +474,20 @@ public class ProUnityImportService {
             }
         }
         
-        return notes.length() > 0 ? notes.toString().trim() : null;
-    }
-    
-    private String extractConclusion(JsonNode candidateNode) {
-        String conclusion = candidateNode.path("conclusion").asText();
-        if (conclusion != null && !conclusion.isEmpty()) {
-            return conclusion;
+        // Also check for explicit conclusion or rejection reason
+        String explicitConclusion = candidateNode.path("conclusion").asText();
+        if (explicitConclusion != null && !explicitConclusion.isEmpty()) {
+            if (notes.length() > 0) notes.append("\n");
+            notes.append("Conclusion: ").append(explicitConclusion);
         }
         
         JsonNode rejectionNode = candidateNode.path("rejectionReason");
         if (!rejectionNode.isMissingNode() && !rejectionNode.asText().isEmpty()) {
-            return "Rejected: " + rejectionNode.asText();
+            if (notes.length() > 0) notes.append("\n");
+            notes.append("Rejected: ").append(rejectionNode.asText());
         }
         
-        return null;
+        return notes.length() > 0 ? notes.toString().trim() : null;
     }
     
     // Inner classes for result
