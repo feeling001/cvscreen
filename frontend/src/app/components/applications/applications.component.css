@@ -52,6 +52,11 @@
   gap: 8px;
 }
 
+button[mat-icon-button] ::ng-deep .mat-badge-content {
+  top: 10px !important;
+  /* right: 15px !important; */
+}
+
 .results-info {
   margin-bottom: 16px;
   color: #666;
@@ -85,6 +90,7 @@ table {
 .rejected-row:hover {
   background-color: #ffcdd2 !important;
 }
+
 
 /* Status badges with colors */
 .status-badge {

@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/companies")
@@ -52,5 +54,44 @@ public class CompanyController {
     public ResponseEntity<Void> deleteCompany(@PathVariable Long id) {
         companyService.deleteCompany(id);
         return ResponseEntity.noContent().build();
+    }
+    
+    @PostMapping("/merge")
+    public ResponseEntity<CompanyDTO> mergeCompanies(@RequestBody Map<String, Object> request) {
+        // Convert targetCompanyId to Long properly
+        Long targetCompanyId = convertToLong(request.get("targetCompanyId"));
+        
+        // Convert companyIdsToMerge to List<Long> properly
+        @SuppressWarnings("unchecked")
+        List<Object> companyIdsObj = (List<Object>) request.get("companyIdsToMerge");
+        List<Long> companyIdsToMerge = companyIdsObj.stream()
+                .map(this::convertToLong)
+                .collect(Collectors.toList());
+        
+        String mergedNotes = (String) request.get("mergedNotes");
+        
+        return ResponseEntity.ok(companyService.mergeCompanies(targetCompanyId, companyIdsToMerge, mergedNotes));
+    }
+    
+    /**
+     * Helper method to convert Object to Long (handles both Integer and Long)
+     */
+    private Long convertToLong(Object value) {
+        if (value == null) {
+            return null;
+        }
+        if (value instanceof Long) {
+            return (Long) value;
+        }
+        if (value instanceof Integer) {
+            return ((Integer) value).longValue();
+        }
+        if (value instanceof String) {
+            return Long.parseLong((String) value);
+        }
+        if (value instanceof Number) {
+            return ((Number) value).longValue();
+        }
+        throw new IllegalArgumentException("Cannot convert " + value.getClass() + " to Long");
     }
 }

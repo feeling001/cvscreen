@@ -57,7 +57,7 @@ export class ApplicationsComponent implements OnInit {
   
   // Pagination
   currentPage = 0;
-  pageSize = 100;
+  pageSize = 50;
   totalItems = 0;
   totalPages = 0;
   pageSizeOptions = [25, 50, 100, 200];

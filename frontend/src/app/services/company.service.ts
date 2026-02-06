@@ -42,4 +42,12 @@ export class CompanyService {
   deleteCompany(id: number): Observable<void> {
     return this.http.delete<void>(`${this.API_URL}/${id}`);
   }
+  
+  mergeCompanies(targetCompanyId: number, companyIdsToMerge: number[], mergedNotes: string): Observable<Company> {
+    return this.http.post<Company>(`${this.API_URL}/merge`, {
+      targetCompanyId,
+      companyIdsToMerge,
+      mergedNotes
+    });
+  }
 }

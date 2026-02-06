@@ -35,6 +35,11 @@ public interface ApplicationRepository extends JpaRepository<Application, Long>,
     void updateCandidateForApplications(@Param("sourceCandidateId") Long sourceCandidateId, 
                                        @Param("targetCandidateId") Long targetCandidateId);
     
+    @Modifying
+    @Query("UPDATE Application a SET a.company.id = :targetCompanyId WHERE a.company.id = :sourceCompanyId")
+    void updateCompanyForApplications(@Param("sourceCompanyId") Long sourceCompanyId, 
+                                      @Param("targetCompanyId") Long targetCompanyId);
+    
     /**
      * Find all applications with pagination, supporting sorting by candidate name or average rating
      */
