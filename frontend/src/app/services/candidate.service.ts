@@ -13,6 +13,12 @@ export interface PaginatedResponse<T> {
   totalPages: number;
 }
 
+export interface CandidateDuplicate {
+  candidate1: Candidate;
+  candidate2: Candidate;
+  similarityScore: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -67,6 +73,13 @@ export class CandidateService {
       .set('sortDirection', sortDirection);
     
     return this.http.get<PaginatedResponse<Candidate>>(`${this.API_URL}/search`, { params });
+  }
+
+  /**
+   * Find potential duplicate candidates
+   */
+  findPotentialDuplicates(): Observable<CandidateDuplicate[]> {
+    return this.http.get<CandidateDuplicate[]>(`${this.API_URL}/duplicates`);
   }
 
   createCandidate(candidate: Partial<Candidate>): Observable<Candidate> {

@@ -8,13 +8,14 @@ import com.cvscreen.repository.ApplicationRepository;
 import com.cvscreen.repository.CandidateRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -28,6 +29,8 @@ public class CandidateService {
     private final ApplicationRepository applicationRepository;
     private final ApplicationCommentRepository commentRepository;
     private final ApplicationCommentService commentService;
+    
+    private static final LevenshteinDistance LEVENSHTEIN = new LevenshteinDistance();
     
     @Transactional(readOnly = true)
     public Page<CandidateDTO> getAllCandidatesPaginated(Pageable pageable) {
@@ -167,6 +170,60 @@ public class CandidateService {
         return candidateRepository.searchByName(searchTerm).stream()
             .map(this::convertToDTO)
             .collect(Collectors.toList());
+    }
+    
+    /**
+     * NEW: Find potential duplicate candidates based on name similarity
+     * Uses Levenshtein distance algorithm
+     * 
+     * @param threshold Similarity threshold (0.0 to 1.0), default 0.85 means 85% similar
+     * @return List of duplicate pairs
+     */
+    @Transactional(readOnly = true)
+    public List<CandidateDuplicateDTO> findPotentialDuplicates(double threshold) {
+        log.info("Searching for duplicate candidates with threshold: {}", threshold);
+        
+        List<Candidate> allCandidates = candidateRepository.findAll();
+        List<CandidateDuplicateDTO> duplicates = new ArrayList<>();
+        
+        // Compare each candidate with every other candidate
+        for (int i = 0; i < allCandidates.size(); i++) {
+            Candidate candidate1 = allCandidates.get(i);
+            String name1 = candidate1.getFullName().toLowerCase().trim();
+            
+            for (int j = i + 1; j < allCandidates.size(); j++) {
+                Candidate candidate2 = allCandidates.get(j);
+                String name2 = candidate2.getFullName().toLowerCase().trim();
+                
+                // Calculate Levenshtein distance
+                int distance = LEVENSHTEIN.apply(name1, name2);
+                
+                // Calculate similarity ratio (0.0 to 1.0)
+                int maxLength = Math.max(name1.length(), name2.length());
+                double similarityScore = 1.0 - ((double) distance / maxLength);
+                
+                // If similarity is above threshold, consider it a potential duplicate
+                if (similarityScore >= threshold) {
+                    CandidateDuplicateDTO duplicate = new CandidateDuplicateDTO();
+                    duplicate.setCandidate1(convertToDTO(candidate1));
+                    duplicate.setCandidate2(convertToDTO(candidate2));
+                    duplicate.setSimilarityScore(similarityScore);
+                    duplicate.setLevenshteinDistance(distance);
+                    duplicate.setMatchReason(String.format("Name similarity: %.0f%%", similarityScore * 100));
+                    
+                    duplicates.add(duplicate);
+                    
+                    log.debug("Found duplicate: '{}' ≈ '{}' ({}%)", 
+                            name1, name2, (int)(similarityScore * 100));
+                }
+            }
+        }
+        
+        // Sort by similarity score (highest first)
+        duplicates.sort(Comparator.comparing(CandidateDuplicateDTO::getSimilarityScore).reversed());
+        
+        log.info("Found {} potential duplicate pairs", duplicates.size());
+        return duplicates;
     }
     
     @Transactional

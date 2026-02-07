@@ -114,9 +114,10 @@ export class ApplicationsComponent implements OnInit {
   }
 
   loadCompanies(): void {
-    this.companyService.getAllCompanies().subscribe({
-      next: (data) => {
-        this.companies = data;
+    // FIX: Gérer la réponse paginée - charger toutes les companies pour le dropdown
+    this.companyService.getAllCompanies(0, 1000).subscribe({
+      next: (response) => {
+        this.companies = response.companies || [];
       },
       error: (error) => {
         console.error('Failed to load companies', error);
@@ -168,6 +169,7 @@ export class ApplicationsComponent implements OnInit {
       this.loadApplications();
     }
   }
+
   clearFilters(): void {
     this.searchTerm = '';
     this.filterStatus = null;

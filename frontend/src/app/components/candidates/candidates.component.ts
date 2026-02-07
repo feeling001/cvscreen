@@ -18,10 +18,12 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatDividerModule } from '@angular/material/divider';
 import { MatChipsModule } from '@angular/material/chips';
-import { CandidateService } from '../../services/candidate.service';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { CandidateService, CandidateDuplicate } from '../../services/candidate.service';
 import { Candidate } from '../../models/candidate.model';
 import { CandidateDialogComponent } from '../candidate-dialog/candidate-dialog.component';
 import { CandidateMergeDialogComponent } from '../candidate-merge-dialog/candidate-merge-dialog.component';
+import { CandidateDuplicatesDialogComponent } from '../candidate-duplicates-dialog/candidate-duplicates-dialog.component';
 
 @Component({
   selector: 'app-candidates',
@@ -44,7 +46,8 @@ import { CandidateMergeDialogComponent } from '../candidate-merge-dialog/candida
     MatTooltipModule,
     MatCheckboxModule,
     MatDividerModule,
-    MatChipsModule
+    MatChipsModule,
+    MatProgressSpinnerModule
   ],
   templateUrl: './candidates.component.html',
   styleUrls: ['./candidates.component.css']
@@ -70,6 +73,10 @@ export class CandidatesComponent implements OnInit {
   // Sorting
   sortBy = 'lastName';
   sortDirection: 'asc' | 'desc' = 'asc';
+  
+  // Duplicates detection
+  duplicates: CandidateDuplicate[] = [];
+  detectingDuplicates = false;
 
   constructor(
     private candidateService: CandidateService,
@@ -103,6 +110,69 @@ export class CandidatesComponent implements OnInit {
         this.snackBar.open('Failed to load candidates', 'Close', { duration: 3000 });
       }
     });
+  }
+  
+  /**
+   * Detect duplicate candidates
+   */
+  detectDuplicates(): void {
+    this.detectingDuplicates = true;
+    this.candidateService.findPotentialDuplicates().subscribe({
+      next: (duplicates) => {
+        this.duplicates = duplicates;
+        this.detectingDuplicates = false;
+        
+        if (duplicates.length === 0) {
+          this.snackBar.open('No duplicate candidates found!', 'Close', { duration: 3000 });
+        } else {
+          this.snackBar.open(`Found ${duplicates.length} potential duplicate pair(s)`, 'Close', { duration: 5000 });
+        }
+      },
+      error: (error) => {
+        this.detectingDuplicates = false;
+        this.snackBar.open('Failed to detect duplicates', 'Close', { duration: 3000 });
+      }
+    });
+  }
+  
+  /**
+   * Compare two duplicate candidates
+   */
+  compareDuplicates(duplicate: CandidateDuplicate): void {
+    const dialogRef = this.dialog.open(CandidateDuplicatesDialogComponent, {
+      width: '900px',
+      data: duplicate
+    });
+    
+    dialogRef.afterClosed().subscribe(result => {
+      if (result && result.action === 'merge') {
+        // Open merge dialog with these two candidates
+        this.openMergeDialogForDuplicates(result.candidates);
+      }
+    });
+  }
+  
+  /**
+   * Open merge dialog for duplicate candidates
+   */
+  openMergeDialogForDuplicates(candidates: Candidate[]): void {
+    const dialogRef = this.dialog.open(CandidateMergeDialogComponent, {
+      width: '600px',
+      data: candidates
+    });
+    
+    dialogRef.afterClosed().subscribe(result => {
+      if (result) {
+        this.performMerge(result.targetCandidateId, result.candidateIds, result.mergedNotes);
+      }
+    });
+  }
+  
+  /**
+   * Get similarity percentage for display
+   */
+  getSimilarityPercentage(duplicate: CandidateDuplicate): number {
+    return Math.round(duplicate.similarityScore * 100);
   }
 
   search(): void {
@@ -227,6 +297,7 @@ export class CandidatesComponent implements OnInit {
       next: () => {
         this.snackBar.open('Candidates merged successfully', 'Close', { duration: 3000 });
         this.clearSelection();
+        this.duplicates = []; // Clear duplicates after merge
         this.loadCandidates();
         this.selectedCandidate = null;
       },

@@ -1,0 +1,103 @@
+/* Styles à ajouter dans candidates.component.css */
+
+/* Duplicates Panel Styles */
+.duplicates-panel {
+  margin-bottom: 24px;
+}
+
+.duplicates-expansion {
+  background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%);
+  border-left: 4px solid #ff9800;
+  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.2);
+}
+
+.duplicates-expansion mat-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: 600;
+  color: #e65100;
+}
+
+.warning-icon {
+  color: #ff9800;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+.duplicates-content {
+  padding: 16px 0;
+}
+
+.duplicates-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: rgba(255, 152, 0, 0.1);
+  border-radius: 4px;
+  color: #e65100;
+}
+
+.duplicates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.duplicate-card {
+  background: white;
+  border-left: 3px solid #ff9800;
+}
+
+.duplicate-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.duplicate-names {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.candidate-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vs-icon {
+  color: #ff9800;
+  font-size: 28px;
+  width: 28px;
+  height: 28px;
+}
+
+.similarity-chip {
+  font-weight: 600;
+}
+
+.similarity-chip.high-similarity {
+  background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
+  color: white !important;
+  animation: pulse 2s infinite;
+}
+
+.similarity-chip.medium-similarity {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  color: white !important;
+}
+
+.duplicate-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}

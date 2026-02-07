@@ -177,9 +177,10 @@ export class ApplicationDialogComponent implements OnInit {
   }
 
   loadCompanies(): void {
-    this.companyService.getAllCompanies().subscribe({
-      next: (data) => {
-        this.companies = data;
+    // FIX: Gérer la réponse paginée
+    this.companyService.getAllCompanies(0, 1000).subscribe({
+      next: (response) => {
+        this.companies = response.companies || [];
       },
       error: (error) => console.error('Failed to load companies', error)
     });

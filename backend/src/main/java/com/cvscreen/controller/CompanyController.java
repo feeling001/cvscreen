@@ -3,10 +3,15 @@ package com.cvscreen.controller;
 import com.cvscreen.dto.CompanyDTO;
 import com.cvscreen.service.CompanyService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -19,9 +24,28 @@ public class CompanyController {
     
     private final CompanyService companyService;
     
+    /**
+     * NEW: Get all companies with pagination and sorting
+     */
     @GetMapping
-    public ResponseEntity<List<CompanyDTO>> getAllCompanies() {
-        return ResponseEntity.ok(companyService.getAllCompanies());
+    public ResponseEntity<Map<String, Object>> getAllCompanies(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
+            @RequestParam(defaultValue = "applicationCount") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection) {
+        
+        Sort.Direction direction = sortDirection.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        
+        Page<CompanyDTO> companyPage = companyService.getAllCompaniesPaginated(pageable);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("companies", companyPage.getContent());
+        response.put("currentPage", companyPage.getNumber());
+        response.put("totalItems", companyPage.getTotalElements());
+        response.put("totalPages", companyPage.getTotalPages());
+        
+        return ResponseEntity.ok(response);
     }
     
     @GetMapping("/{id}")
@@ -29,9 +53,29 @@ public class CompanyController {
         return ResponseEntity.ok(companyService.getCompanyById(id));
     }
     
+    /**
+     * NEW: Search companies with pagination and sorting
+     */
     @GetMapping("/search")
-    public ResponseEntity<List<CompanyDTO>> searchCompanies(@RequestParam String q) {
-        return ResponseEntity.ok(companyService.searchCompanies(q));
+    public ResponseEntity<Map<String, Object>> searchCompanies(
+            @RequestParam String q,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "50") int size,
+            @RequestParam(defaultValue = "applicationCount") String sortBy,
+            @RequestParam(defaultValue = "desc") String sortDirection) {
+        
+        Sort.Direction direction = sortDirection.equalsIgnoreCase("desc") ? Sort.Direction.DESC : Sort.Direction.ASC;
+        Pageable pageable = PageRequest.of(page, size, Sort.by(direction, sortBy));
+        
+        Page<CompanyDTO> companyPage = companyService.searchCompaniesPaginated(q, pageable);
+        
+        Map<String, Object> response = new HashMap<>();
+        response.put("companies", companyPage.getContent());
+        response.put("currentPage", companyPage.getNumber());
+        response.put("totalItems", companyPage.getTotalElements());
+        response.put("totalPages", companyPage.getTotalPages());
+        
+        return ResponseEntity.ok(response);
     }
     
     @PostMapping

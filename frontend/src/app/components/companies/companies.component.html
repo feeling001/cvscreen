@@ -1,0 +1,105 @@
+<!-- Template mis à jour pour companies.component.html avec pagination et tri -->
+
+<div class="container">
+  <div class="header">
+    <h2>Companies</h2>
+    <div class="header-actions">
+      <button 
+        mat-raised-button 
+        color="accent" 
+        (click)="openMergeDialog()"
+        [disabled]="selectedCompanyIds.size < 2"
+        *ngIf="selectedCompanyIds.size > 0">
+        <mat-icon>merge</mat-icon>
+        Merge {{ selectedCompanyIds.size }} Companies
+      </button>
+      <button mat-raised-button color="primary" (click)="openCreateDialog()">
+        <mat-icon>add</mat-icon>
+        New Company
+      </button>
+    </div>
+  </div>
+  
+  <div class="search-bar">
+    <mat-form-field appearance="outline">
+      <mat-label>Search companies</mat-label>
+      <input matInput [(ngModel)]="searchTerm" (keyup.enter)="search()">
+    </mat-form-field>
+    <button mat-raised-button color="primary" (click)="search()">
+      <mat-icon>search</mat-icon>
+      Search
+    </button>
+    <button 
+      mat-button 
+      (click)="clearSelection()" 
+      *ngIf="selectedCompanyIds.size > 0">
+      <mat-icon>clear</mat-icon>
+      Clear Selection
+    </button>
+  </div>
+
+  <table mat-table [dataSource]="companies" class="mat-elevation-z8" matSort (matSortChange)="onSortChange($event)">
+    <ng-container matColumnDef="select">
+      <th mat-header-cell *matHeaderCellDef>
+        <mat-icon matTooltip="Select companies to merge">check_box_outline_blank</mat-icon>
+      </th>
+      <td mat-cell *matCellDef="let company">
+        <mat-checkbox
+          [checked]="isSelected(company.id!)"
+          (change)="toggleSelection(company.id!)"
+          (click)="$event.stopPropagation()">
+        </mat-checkbox>
+      </td>
+    </ng-container>
+    
+    <ng-container matColumnDef="name">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Name</th>
+      <td mat-cell *matCellDef="let company">
+        <a class="link" 
+           (click)="navigateToApplications(company.name)" 
+           matTooltip="View applications from this company">
+          {{ company.name }}
+        </a>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="applicationCount">
+      <th mat-header-cell *matHeaderCellDef mat-sort-header>Applications</th>
+      <td mat-cell *matCellDef="let company">{{ company.applicationCount || 0 }}</td>
+    </ng-container>
+
+    <ng-container matColumnDef="notes">
+      <th mat-header-cell *matHeaderCellDef>Notes</th>
+      <td mat-cell *matCellDef="let company">
+        <span class="notes-preview">{{ company.notes || '-' }}</span>
+      </td>
+    </ng-container>
+
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef>Actions</th>
+      <td mat-cell *matCellDef="let company">
+        <button mat-icon-button color="primary" (click)="openEditDialog(company)"
+                matTooltip="Edit">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button color="warn" (click)="deleteCompany(company.id!)"
+                matTooltip="Delete">
+          <mat-icon>delete</mat-icon>
+        </button>
+      </td>
+    </ng-container>
+
+    <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+  </table>
+  
+  <!-- Pagination -->
+  <mat-paginator 
+    [length]="totalItems"
+    [pageSize]="pageSize"
+    [pageSizeOptions]="pageSizeOptions"
+    [pageIndex]="currentPage"
+    (page)="onPageChange($event)"
+    showFirstLastButtons>
+  </mat-paginator>
+</div>

@@ -1,6 +1,7 @@
 package com.cvscreen.controller;
 
 import com.cvscreen.dto.CandidateDTO;
+import com.cvscreen.dto.CandidateDuplicateDTO;
 import com.cvscreen.dto.CreateCandidateRequest;
 import com.cvscreen.service.CandidateService;
 import jakarta.validation.Valid;
@@ -72,6 +73,15 @@ public class CandidateController {
         response.put("totalPages", candidatePage.getTotalPages());
         
         return ResponseEntity.ok(response);
+    }
+    
+    /**
+     * NEW: Detect potential duplicate candidates based on name similarity
+     */
+    @GetMapping("/duplicates")
+    public ResponseEntity<List<CandidateDuplicateDTO>> findPotentialDuplicates(
+            @RequestParam(defaultValue = "0.85") double threshold) {
+        return ResponseEntity.ok(candidateService.findPotentialDuplicates(threshold));
     }
     
     @PostMapping

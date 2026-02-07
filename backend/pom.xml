@@ -77,6 +77,13 @@
             <version>5.9</version>
         </dependency>
         
+        <!-- Apache Commons Text for Levenshtein Distance -->
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>1.11.0</version>
+        </dependency>
+        
         <!-- Lombok -->
         <dependency>
             <groupId>org.projectlombok</groupId>

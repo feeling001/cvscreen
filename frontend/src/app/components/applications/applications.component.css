@@ -54,7 +54,6 @@
 
 button[mat-icon-button] ::ng-deep .mat-badge-content {
   top: 10px !important;
-  /* right: 15px !important; */
 }
 
 .results-info {

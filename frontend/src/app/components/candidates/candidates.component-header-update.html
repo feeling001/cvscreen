@@ -1,0 +1,30 @@
+<!-- Mise à jour de la section header dans candidates.component.html -->
+
+<div class="header">
+  <h2>Candidates</h2>
+  <div class="header-actions">
+    <button 
+      mat-raised-button 
+      color="warn"
+      (click)="detectDuplicates()"
+      [disabled]="detectingDuplicates"
+      matTooltip="Detect potential duplicate candidates">
+      <mat-spinner *ngIf="detectingDuplicates" diameter="20" style="display: inline-block; margin-right: 8px;"></mat-spinner>
+      <mat-icon *ngIf="!detectingDuplicates">search</mat-icon>
+      {{ detectingDuplicates ? 'Detecting...' : 'Detect Duplicates' }}
+    </button>
+    <button 
+      mat-raised-button 
+      color="accent" 
+      (click)="openMergeDialog()"
+      [disabled]="selectedCandidateIds.size < 2"
+      *ngIf="selectedCandidateIds.size > 0">
+      <mat-icon>merge</mat-icon>
+      Merge {{ selectedCandidateIds.size }} Candidates
+    </button>
+    <button mat-raised-button color="primary" (click)="openCreateDialog()">
+      <mat-icon>add</mat-icon>
+      New Candidate
+    </button>
+  </div>
+</div>

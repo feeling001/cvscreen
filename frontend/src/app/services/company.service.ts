@@ -4,6 +4,13 @@ import { Observable } from 'rxjs';
 import { Company } from '../models/company.model';
 import { environment } from '../../environments/environment';
 
+export interface PaginatedResponse<T> {
+  companies?: T[];
+  currentPage: number;
+  totalItems: number;
+  totalPages: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -12,17 +19,40 @@ export class CompanyService {
 
   constructor(private http: HttpClient) {}
 
-  getAllCompanies(): Observable<Company[]> {
-    return this.http.get<Company[]>(this.API_URL);
+  getAllCompanies(
+    page: number = 0,
+    size: number = 50,
+    sortBy: string = 'applicationCount',
+    sortDirection: string = 'desc'
+  ): Observable<PaginatedResponse<Company>> {
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('size', size.toString())
+      .set('sortBy', sortBy)
+      .set('sortDirection', sortDirection);
+    
+    return this.http.get<PaginatedResponse<Company>>(this.API_URL, { params });
   }
 
   getCompanyById(id: number): Observable<Company> {
     return this.http.get<Company>(`${this.API_URL}/${id}`);
   }
 
-  searchCompanies(searchTerm: string): Observable<Company[]> {
-    const params = new HttpParams().set('q', searchTerm);
-    return this.http.get<Company[]>(`${this.API_URL}/search`, { params });
+  searchCompanies(
+    searchTerm: string,
+    page: number = 0,
+    size: number = 50,
+    sortBy: string = 'name',
+    sortDirection: string = 'asc'
+  ): Observable<PaginatedResponse<Company>> {
+    const params = new HttpParams()
+      .set('q', searchTerm)
+      .set('page', page.toString())
+      .set('size', size.toString())
+      .set('sortBy', sortBy)
+      .set('sortDirection', sortDirection);
+    
+    return this.http.get<PaginatedResponse<Company>>(`${this.API_URL}/search`, { params });
   }
 
   createCompany(name: string, notes?: string): Observable<Company> {
