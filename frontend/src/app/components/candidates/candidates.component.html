@@ -4,6 +4,16 @@
     <div class="header-actions">
       <button 
         mat-raised-button 
+        color="warn"
+        (click)="detectDuplicates()"
+        [disabled]="detectingDuplicates"
+        matTooltip="Detect potential duplicate candidates">
+        <mat-spinner *ngIf="detectingDuplicates" diameter="20" style="display: inline-block; margin-right: 8px;"></mat-spinner>
+        <mat-icon *ngIf="!detectingDuplicates">search</mat-icon>
+        {{ detectingDuplicates ? 'Detecting...' : 'Detect Duplicates' }}
+      </button>
+      <button 
+        mat-raised-button 
         color="accent" 
         (click)="openMergeDialog()"
         [disabled]="selectedCandidateIds.size < 2"
@@ -16,6 +26,58 @@
         New Candidate
       </button>
     </div>
+  </div>
+  
+  <!-- Duplicates Detection Panel -->
+  <div class="duplicates-panel" *ngIf="duplicates.length > 0">
+    <mat-expansion-panel class="duplicates-expansion" [expanded]="true">
+      <mat-expansion-panel-header>
+        <mat-panel-title>
+          <mat-icon class="warning-icon">warning</mat-icon>
+          <span>Potential Duplicates Found ({{ duplicates.length }})</span>
+        </mat-panel-title>
+      </mat-expansion-panel-header>
+
+      <div class="duplicates-content">
+        <p class="duplicates-info">
+          <mat-icon>info</mat-icon>
+          These candidates have similar names. Review them to determine if they should be merged.
+        </p>
+
+        <div class="duplicates-list">
+          <mat-card *ngFor="let duplicate of duplicates" class="duplicate-card">
+            <mat-card-content>
+              <div class="duplicate-header">
+                <div class="duplicate-names">
+                  <div class="candidate-name">
+                    <mat-icon>person</mat-icon>
+                    <strong>{{ duplicate.candidate1.firstName }} {{ duplicate.candidate1.lastName }}</strong>
+                  </div>
+                  <mat-icon class="vs-icon">compare_arrows</mat-icon>
+                  <div class="candidate-name">
+                    <mat-icon>person</mat-icon>
+                    <strong>{{ duplicate.candidate2.firstName }} {{ duplicate.candidate2.lastName }}</strong>
+                  </div>
+                </div>
+                <mat-chip 
+                  class="similarity-chip"
+                  [class.high-similarity]="getSimilarityPercentage(duplicate) >= 95"
+                  [class.medium-similarity]="getSimilarityPercentage(duplicate) >= 85 && getSimilarityPercentage(duplicate) < 95">
+                  {{ getSimilarityPercentage(duplicate) }}% Similar
+                </mat-chip>
+              </div>
+
+              <div class="duplicate-actions">
+                <button mat-raised-button color="primary" (click)="compareDuplicates(duplicate)">
+                  <mat-icon>visibility</mat-icon>
+                  Compare Details
+                </button>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </div>
+    </mat-expansion-panel>
   </div>
   
   <div class="search-bar">
