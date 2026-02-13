@@ -59,7 +59,7 @@ COPY --from=frontend-builder /app/frontend/dist/cvscreen-frontend/browser /usr/s
 COPY --from=backend-builder /app/backend/target/*.jar app.jar
 
 # Copy nginx configuration
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY docker/nginx.conf /etc/nginx/nginx.conf
 
 # Create directory for CVs
 RUN mkdir -p /app/cvs
