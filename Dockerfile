@@ -1,94 +1,75 @@
-# CVScreen v0.1 - Multi-stage Dockerfile (CORRECTED)
-# Stage 1: Build Frontend
-FROM node:20-alpine AS frontend-builder
+# ==========================================
+# Multi-stage Dockerfile
+# Angular 21 + Spring Boot 4.0.2
+# ==========================================
 
-# Augmenter la mémoire disponible
-ENV NODE_OPTIONS="--max-old-space-size=4096"
+# ==========================================
+# Stage 1: Build Angular Frontend
+# ==========================================
+FROM node:22-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
 # Copy package files
 COPY frontend/package*.json ./
 
-# Install dependencies (including devDependencies needed for build)
-# npm ci requires package-lock.json, so we fall back to npm install if it's not present
-# IMPORTANT: Do NOT use --only=production, we need devDependencies to build!
-RUN if [ -f package-lock.json ]; then \
-        npm ci && npm cache clean --force; \
-    else \
-        npm install && npm cache clean --force; \
-    fi
+# Install dependencies
+RUN npm ci --legacy-peer-deps
 
 # Copy frontend source
 COPY frontend/ ./
 
-# Build Angular application for production with verbose output
-RUN npm run build -- --configuration production --verbose || \
-    (echo "BUILD FAILED - Checking for errors..." && \
-     npm run build -- --configuration production 2>&1 | tee /tmp/build.log && \
-     exit 1)
+# Build Angular application for production
+# FIXED: Use npx to run ng command (Angular CLI not installed globally)
+RUN npx ng build --configuration production
 
-# Vérifier que le build existe
-RUN ls -la dist/cvscreen-frontend/ || (echo "ERROR: Build output not found!" && exit 1)
-
-# Stage 2: Build Backend
+# ==========================================
+# Stage 2: Build Spring Boot Backend
+# ==========================================
 FROM maven:3.9-eclipse-temurin-21-alpine AS backend-builder
 
 WORKDIR /app/backend
 
-# Copy pom.xml first for dependency caching
+# Copy pom.xml first (for better layer caching)
 COPY backend/pom.xml ./
 
-# Download dependencies (cached layer)
+# Download dependencies (cached if pom.xml hasn't changed)
 RUN mvn dependency:go-offline -B
 
 # Copy backend source
 COPY backend/src ./src
 
-# Build Spring Boot application
+# Build the application
 RUN mvn clean package -DskipTests -B
 
-# Vérifier que le JAR existe
-RUN ls -la target/*.jar || (echo "ERROR: JAR not found!" && exit 1)
-
-# Stage 3: Runtime
+# ==========================================
+# Stage 3: Runtime Image
+# ==========================================
 FROM eclipse-temurin:21-jre-alpine
 
-# Install nginx
-RUN apk add --no-cache nginx wget
-
-# Create application directory
 WORKDIR /app
 
-# Copy backend JAR from builder
-COPY --from=backend-builder /app/backend/target/cvscreen-backend-0.1.jar ./backend.jar
+# Install nginx for serving Angular frontend
+RUN apk add --no-cache nginx
 
-# Copy frontend build from builder
+# Copy built Angular app
 COPY --from=frontend-builder /app/frontend/dist/cvscreen-frontend/browser /usr/share/nginx/html
 
-# Fallback: si le dossier browser n'existe pas, essayer sans
-RUN if [ ! -d /usr/share/nginx/html ] || [ -z "$(ls -A /usr/share/nginx/html)" ]; then \
-        rm -rf /usr/share/nginx/html && \
-        mkdir -p /usr/share/nginx/html; \
-    fi
+# Copy built Spring Boot jar
+COPY --from=backend-builder /app/backend/target/*.jar app.jar
 
 # Copy nginx configuration
-COPY docker/nginx.conf /etc/nginx/nginx.conf
-COPY docker/default.conf /etc/nginx/http.d/default.conf
+COPY nginx.conf /etc/nginx/nginx.conf
 
 # Create directory for CVs
-RUN mkdir -p /app/cvs && chmod 755 /app/cvs
+RUN mkdir -p /app/cvs
 
-# Create startup script
-COPY docker/startup.sh /app/startup.sh
-RUN chmod +x /app/startup.sh
-
-# Expose port 80 (nginx)
-EXPOSE 80
+# Expose ports
+EXPOSE 80 8081
 
 # Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider http://localhost/api/auth/login || exit 1
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD wget --no-verbose --tries=1 --spider http://localhost:8081/api/auth/login || exit 1
 
-# Run startup script
-CMD ["/app/startup.sh"]
+# Start both nginx and Spring Boot
+CMD nginx && java -jar app.jar
