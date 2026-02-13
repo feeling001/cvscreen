@@ -14,7 +14,7 @@
     
     <groupId>com.cvscreen</groupId>
     <artifactId>cvscreen-backend</artifactId>
-    <version>0.1</version>
+    <version>0.33</version>
     <name>CVScreen Backend</name>
     <description>IT Recruitment Application Backend - Spring Boot 4.0</description>
     
