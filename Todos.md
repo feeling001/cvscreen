@@ -1,12 +1,20 @@
 
 ## Todos
-- Generate Docker File
+- Generate Docker File          OK
+
 - Admin portail
     - Manage user passwords
     - Allow oAuth config
     - Allow LDAP Config
-- PU Importer
+
+- PU Importer                   OK
     - Manual
-    - Automated
+    - Automated NOK
+
+- Merge candidates              OK
+- Auto find duplicate candidates
+
+- Merge compagnies              OK
+- Sort compagnies
 
     
