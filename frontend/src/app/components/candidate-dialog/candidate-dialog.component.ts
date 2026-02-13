@@ -9,18 +9,17 @@ import { MatSelectModule } from '@angular/material/select';
 import { Candidate } from '../../models/candidate.model';
 
 @Component({
-  selector: 'app-candidate-dialog',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatDialogModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatSelectModule
-  ],
-  template: `
+    selector: 'app-candidate-dialog',
+    imports: [
+        CommonModule,
+        FormsModule,
+        MatDialogModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatButtonModule,
+        MatSelectModule
+    ],
+    template: `
     <h2 mat-dialog-title>{{ data ? 'Edit Candidate' : 'New Candidate' }}</h2>
     <mat-dialog-content>
       <div class="form-container">
@@ -57,7 +56,7 @@ import { Candidate } from '../../models/candidate.model';
       </button>
     </mat-dialog-actions>
   `,
-  styles: [`
+    styles: [`
     .form-container {
       display: flex;
       flex-direction: column;

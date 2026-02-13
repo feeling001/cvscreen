@@ -28,22 +28,21 @@ interface ImportResult {
 }
 
 @Component({
-  selector: 'app-prounity-import',
-  standalone: true,
-  imports: [
-    CommonModule,
-    MatCardModule,
-    MatButtonModule,
-    MatIconModule,
-    MatProgressBarModule,
-    MatTableModule,
-    MatSnackBarModule,
-    MatExpansionModule,
-    MatListModule,
-    MatDividerModule
-  ],
-  templateUrl: './prounity-import.component.html',
-  styleUrls: ['./prounity-import.component.css']
+    selector: 'app-prounity-import',
+    imports: [
+        CommonModule,
+        MatCardModule,
+        MatButtonModule,
+        MatIconModule,
+        MatProgressBarModule,
+        MatTableModule,
+        MatSnackBarModule,
+        MatExpansionModule,
+        MatListModule,
+        MatDividerModule
+    ],
+    templateUrl: './prounity-import.component.html',
+    styleUrls: ['./prounity-import.component.css']
 })
 export class ProunityImportComponent {
   selectedFile: File | null = null;

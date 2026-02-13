@@ -8,17 +8,16 @@ import { MatButtonModule } from '@angular/material/button';
 import { Company } from '../../models/company.model';
 
 @Component({
-  selector: 'app-company-dialog',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatDialogModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule
-  ],
-  template: `
+    selector: 'app-company-dialog',
+    imports: [
+        CommonModule,
+        FormsModule,
+        MatDialogModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatButtonModule
+    ],
+    template: `
     <h2 mat-dialog-title>{{ data ? 'Edit Company' : 'New Company' }}</h2>
     <mat-dialog-content>
       <div class="form-container">
@@ -41,7 +40,7 @@ import { Company } from '../../models/company.model';
       </button>
     </mat-dialog-actions>
   `,
-  styles: [`
+    styles: [`
     .form-container {
       display: flex;
       flex-direction: column;

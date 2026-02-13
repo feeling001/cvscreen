@@ -14,21 +14,20 @@ import { User } from '../../models/user.model';
 import { UserDialogComponent } from '../user-dialog/user-dialog.component';
 
 @Component({
-  selector: 'app-users',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatTableModule,
-    MatButtonModule,
-    MatIconModule,
-    MatSnackBarModule,
-    MatDialogModule,
-    MatTooltipModule,
-    MatChipsModule
-  ],
-  templateUrl: './users.component.html',
-  styleUrls: ['./users.component.css']
+    selector: 'app-users',
+    imports: [
+        CommonModule,
+        FormsModule,
+        MatTableModule,
+        MatButtonModule,
+        MatIconModule,
+        MatSnackBarModule,
+        MatDialogModule,
+        MatTooltipModule,
+        MatChipsModule
+    ],
+    templateUrl: './users.component.html',
+    styleUrls: ['./users.component.css']
 })
 export class UsersComponent implements OnInit {
   users: User[] = [];

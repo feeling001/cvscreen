@@ -19,25 +19,24 @@ import { CompanyDialogComponent } from '../company-dialog/company-dialog.compone
 import { CompanyMergeDialogComponent } from '../company-merge-dialog/company-merge-dialog.component';
 
 @Component({
-  selector: 'app-companies',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatTableModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatIconModule,
-    MatSnackBarModule,
-    MatDialogModule,
-    MatTooltipModule,
-    MatCheckboxModule,
-    MatPaginatorModule,
-    MatSortModule
-  ],
-  templateUrl: './companies.component.html',
-  styleUrls: ['./companies.component.css']
+    selector: 'app-companies',
+    imports: [
+        CommonModule,
+        FormsModule,
+        MatTableModule,
+        MatButtonModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatIconModule,
+        MatSnackBarModule,
+        MatDialogModule,
+        MatTooltipModule,
+        MatCheckboxModule,
+        MatPaginatorModule,
+        MatSortModule
+    ],
+    templateUrl: './companies.component.html',
+    styleUrls: ['./companies.component.css']
 })
 export class CompaniesComponent implements OnInit {
   companies: Company[] = [];

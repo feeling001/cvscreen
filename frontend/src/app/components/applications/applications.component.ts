@@ -22,27 +22,26 @@ import { ApplicationDialogComponent } from '../application-dialog/application-di
 import { ApplicationCommentsDialogComponent } from '../application-comments-dialog/application-comments-dialog.component';
 
 @Component({
-  selector: 'app-applications',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatTableModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatIconModule,
-    MatSelectModule,
-    MatSnackBarModule,
-    MatDialogModule,
-    MatChipsModule,
-    MatBadgeModule,
-    MatTooltipModule,
-    MatPaginatorModule,
-    MatSortModule
-  ],
-  templateUrl: './applications.component.html',
-  styleUrls: ['./applications.component.css']
+    selector: 'app-applications',
+    imports: [
+        CommonModule,
+        FormsModule,
+        MatTableModule,
+        MatButtonModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatIconModule,
+        MatSelectModule,
+        MatSnackBarModule,
+        MatDialogModule,
+        MatChipsModule,
+        MatBadgeModule,
+        MatTooltipModule,
+        MatPaginatorModule,
+        MatSortModule
+    ],
+    templateUrl: './applications.component.html',
+    styleUrls: ['./applications.component.css']
 })
 export class ApplicationsComponent implements OnInit {
   applications: Application[] = [];

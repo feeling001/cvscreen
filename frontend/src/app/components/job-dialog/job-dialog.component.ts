@@ -11,20 +11,19 @@ import { MatNativeDateModule } from '@angular/material/core';
 import { Job, JobStatus } from '../../models/job.model';
 
 @Component({
-  selector: 'app-job-dialog',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatDialogModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatSelectModule,
-    MatDatepickerModule,
-    MatNativeDateModule
-  ],
-  template: `
+    selector: 'app-job-dialog',
+    imports: [
+        CommonModule,
+        FormsModule,
+        MatDialogModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatButtonModule,
+        MatSelectModule,
+        MatDatepickerModule,
+        MatNativeDateModule
+    ],
+    template: `
     <h2 mat-dialog-title>{{ data ? 'Edit Job' : 'New Job' }}</h2>
     <mat-dialog-content>
       <div class="form-container">
@@ -80,7 +79,7 @@ import { Job, JobStatus } from '../../models/job.model';
       </button>
     </mat-dialog-actions>
   `,
-  styles: [`
+    styles: [`
     .form-container {
       display: flex;
       flex-direction: column;

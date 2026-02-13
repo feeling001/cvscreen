@@ -12,21 +12,20 @@ import { MatDividerModule } from '@angular/material/divider';
 import { Candidate } from '../../models/candidate.model';
 
 @Component({
-  selector: 'app-candidate-merge-dialog',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatDialogModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatRadioModule,
-    MatIconModule,
-    MatListModule,
-    MatDividerModule
-  ],
-  template: `
+    selector: 'app-candidate-merge-dialog',
+    imports: [
+        CommonModule,
+        FormsModule,
+        MatDialogModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatButtonModule,
+        MatRadioModule,
+        MatIconModule,
+        MatListModule,
+        MatDividerModule
+    ],
+    template: `
     <h2 mat-dialog-title>
       <mat-icon>merge</mat-icon>
       Merge Candidates
@@ -105,7 +104,7 @@ import { Candidate } from '../../models/candidate.model';
       </button>
     </mat-dialog-actions>
   `,
-  styles: [`
+    styles: [`
     .merge-container {
       min-width: 550px;
       padding: 20px 0;

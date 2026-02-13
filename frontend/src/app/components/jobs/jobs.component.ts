@@ -16,22 +16,21 @@ import { Job } from '../../models/job.model';
 import { JobDialogComponent } from '../job-dialog/job-dialog.component';
 
 @Component({
-  selector: 'app-jobs',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatTableModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatIconModule,
-    MatSnackBarModule,
-    MatDialogModule,
-    MatCardModule,
-    MatChipsModule
-  ],
-  template: `
+    selector: 'app-jobs',
+    imports: [
+        CommonModule,
+        FormsModule,
+        MatTableModule,
+        MatButtonModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatIconModule,
+        MatSnackBarModule,
+        MatDialogModule,
+        MatCardModule,
+        MatChipsModule
+    ],
+    template: `
     <div class="container">
       <div class="header">
         <h2>Jobs</h2>
@@ -180,7 +179,7 @@ import { JobDialogComponent } from '../job-dialog/job-dialog.component';
       </div>
     </div>
   `,
-  styles: [`
+    styles: [`
     .container {
       padding: 20px;
     }

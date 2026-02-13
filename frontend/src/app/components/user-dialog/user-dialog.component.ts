@@ -16,19 +16,18 @@ interface DialogData {
 }
 
 @Component({
-  selector: 'app-user-dialog',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatDialogModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatCheckboxModule,
-    MatIconModule
-  ],
-  template: `
+    selector: 'app-user-dialog',
+    imports: [
+        CommonModule,
+        FormsModule,
+        MatDialogModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatButtonModule,
+        MatCheckboxModule,
+        MatIconModule
+    ],
+    template: `
     <h2 mat-dialog-title>{{ isEditMode ? 'Edit User' : 'Create New User' }}</h2>
     <mat-dialog-content>
       <div class="form-container">
@@ -97,7 +96,7 @@ interface DialogData {
       </button>
     </mat-dialog-actions>
   `,
-  styles: [`
+    styles: [`
     .form-container {
       display: flex;
       flex-direction: column;

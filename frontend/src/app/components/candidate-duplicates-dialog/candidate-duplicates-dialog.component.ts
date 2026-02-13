@@ -14,18 +14,17 @@ interface DuplicatePair {
 }
 
 @Component({
-  selector: 'app-candidate-duplicates-dialog',
-  standalone: true,
-  imports: [
-    CommonModule,
-    MatDialogModule,
-    MatButtonModule,
-    MatIconModule,
-    MatDividerModule,
-    MatChipsModule,
-    MatCardModule
-  ],
-  template: `
+    selector: 'app-candidate-duplicates-dialog',
+    imports: [
+        CommonModule,
+        MatDialogModule,
+        MatButtonModule,
+        MatIconModule,
+        MatDividerModule,
+        MatChipsModule,
+        MatCardModule
+    ],
+    template: `
     <h2 mat-dialog-title>
       <mat-icon>compare_arrows</mat-icon>
       Compare Duplicate Candidates
@@ -137,7 +136,7 @@ interface DuplicatePair {
       <button mat-button (click)="onClose()">Close</button>
     </mat-dialog-actions>
   `,
-  styles: [`
+    styles: [`
     .comparison-container {
       min-width: 800px;
       padding: 20px 0;

@@ -12,21 +12,20 @@ import { MatDividerModule } from '@angular/material/divider';
 import { Company } from '../../models/company.model';
 
 @Component({
-  selector: 'app-company-merge-dialog',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatDialogModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatButtonModule,
-    MatRadioModule,
-    MatIconModule,
-    MatListModule,
-    MatDividerModule
-  ],
-  template: `
+    selector: 'app-company-merge-dialog',
+    imports: [
+        CommonModule,
+        FormsModule,
+        MatDialogModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatButtonModule,
+        MatRadioModule,
+        MatIconModule,
+        MatListModule,
+        MatDividerModule
+    ],
+    template: `
     <h2 mat-dialog-title>
       <mat-icon>merge</mat-icon>
       Merge Companies
@@ -101,7 +100,7 @@ import { Company } from '../../models/company.model';
       </button>
     </mat-dialog-actions>
   `,
-  styles: [`
+    styles: [`
     .merge-container {
       min-width: 550px;
       padding: 20px 0;

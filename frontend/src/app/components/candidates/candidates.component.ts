@@ -26,31 +26,30 @@ import { CandidateMergeDialogComponent } from '../candidate-merge-dialog/candida
 import { CandidateDuplicatesDialogComponent } from '../candidate-duplicates-dialog/candidate-duplicates-dialog.component';
 
 @Component({
-  selector: 'app-candidates',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatTableModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatIconModule,
-    MatSnackBarModule,
-    MatDialogModule,
-    MatExpansionModule,
-    MatCardModule,
-    MatPaginatorModule,
-    MatSelectModule,
-    MatSortModule,
-    MatTooltipModule,
-    MatCheckboxModule,
-    MatDividerModule,
-    MatChipsModule,
-    MatProgressSpinnerModule
-  ],
-  templateUrl: './candidates.component.html',
-  styleUrls: ['./candidates.component.css']
+    selector: 'app-candidates',
+    imports: [
+        CommonModule,
+        FormsModule,
+        MatTableModule,
+        MatButtonModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatIconModule,
+        MatSnackBarModule,
+        MatDialogModule,
+        MatExpansionModule,
+        MatCardModule,
+        MatPaginatorModule,
+        MatSelectModule,
+        MatSortModule,
+        MatTooltipModule,
+        MatCheckboxModule,
+        MatDividerModule,
+        MatChipsModule,
+        MatProgressSpinnerModule
+    ],
+    templateUrl: './candidates.component.html',
+    styleUrls: ['./candidates.component.css']
 })
 export class CandidatesComponent implements OnInit {
   candidates: Candidate[] = [];

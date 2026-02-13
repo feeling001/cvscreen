@@ -17,25 +17,24 @@ import { AuthService } from '../../services/auth.service';
 import { ApplicationComment } from '../../models/application-comment.model';
 
 @Component({
-  selector: 'app-application-comments-dialog',
-  standalone: true,
-  imports: [
-    CommonModule,
-    FormsModule,
-    MatDialogModule,
-    MatButtonModule,
-    MatFormFieldModule,
-    MatInputModule,
-    MatIconModule,
-    MatListModule,
-    MatDividerModule,
-    MatProgressSpinnerModule,
-    MatSnackBarModule,
-    MatChipsModule,
-    MatTooltipModule
-  ],
-  templateUrl: './application-comments-dialog.component.html',
-  styleUrls: ['./application-comments-dialog.component.css']
+    selector: 'app-application-comments-dialog',
+    imports: [
+        CommonModule,
+        FormsModule,
+        MatDialogModule,
+        MatButtonModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatIconModule,
+        MatListModule,
+        MatDividerModule,
+        MatProgressSpinnerModule,
+        MatSnackBarModule,
+        MatChipsModule,
+        MatTooltipModule
+    ],
+    templateUrl: './application-comments-dialog.component.html',
+    styleUrls: ['./application-comments-dialog.component.css']
 })
 export class ApplicationCommentsDialogComponent implements OnInit {
   comments: ApplicationComment[] = [];
