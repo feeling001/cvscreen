@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { HttpClient, HttpEventType } from '@angular/common/http';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
@@ -30,17 +30,16 @@ interface ImportResult {
 @Component({
     selector: 'app-prounity-import',
     imports: [
-        CommonModule,
-        MatCardModule,
-        MatButtonModule,
-        MatIconModule,
-        MatProgressBarModule,
-        MatTableModule,
-        MatSnackBarModule,
-        MatExpansionModule,
-        MatListModule,
-        MatDividerModule
-    ],
+    MatCardModule,
+    MatButtonModule,
+    MatIconModule,
+    MatProgressBarModule,
+    MatTableModule,
+    MatSnackBarModule,
+    MatExpansionModule,
+    MatListModule,
+    MatDividerModule
+],
     templateUrl: './prounity-import.component.html',
     styleUrls: ['./prounity-import.component.css']
 })

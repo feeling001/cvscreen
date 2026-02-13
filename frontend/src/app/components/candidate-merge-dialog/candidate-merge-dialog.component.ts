@@ -1,5 +1,5 @@
 import { Component, Inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -14,17 +14,16 @@ import { Candidate } from '../../models/candidate.model';
 @Component({
     selector: 'app-candidate-merge-dialog',
     imports: [
-        CommonModule,
-        FormsModule,
-        MatDialogModule,
-        MatFormFieldModule,
-        MatInputModule,
-        MatButtonModule,
-        MatRadioModule,
-        MatIconModule,
-        MatListModule,
-        MatDividerModule
-    ],
+    FormsModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatRadioModule,
+    MatIconModule,
+    MatListModule,
+    MatDividerModule
+],
     template: `
     <h2 mat-dialog-title>
       <mat-icon>merge</mat-icon>
@@ -35,61 +34,64 @@ import { Candidate } from '../../models/candidate.model';
         <div class="info-section">
           <mat-icon class="info-icon">info</mat-icon>
           <p>
-            You are about to merge {{ candidates.length }} candidates. 
-            Select which candidate to keep as the primary one. 
+            You are about to merge {{ candidates.length }} candidates.
+            Select which candidate to keep as the primary one.
             All applications from the other candidates will be transferred to the selected candidate.
           </p>
         </div>
-
+    
         <mat-divider></mat-divider>
-
+    
         <h3>Select Primary Candidate:</h3>
         <mat-radio-group [(ngModel)]="selectedCandidateId" class="candidate-list">
-          <mat-radio-button 
-            *ngFor="let candidate of candidates" 
-            [value]="candidate.id"
-            class="candidate-option">
-            <div class="candidate-info">
-              <strong>{{ candidate.firstName }} {{ candidate.lastName }}</strong>
-              <div class="candidate-details">
-                <span class="detail-item">
-                  <mat-icon class="small-icon">work</mat-icon>
-                  {{ candidate.applicationCount || 0 }} applications
-                </span>
-                <span class="detail-item">
-                  <mat-icon class="small-icon">comment</mat-icon>
-                  {{ candidate.reviewCount || 0 }} reviews
-                </span>
-                <span class="detail-item" *ngIf="candidate.contractType">
-                  <mat-icon class="small-icon">badge</mat-icon>
-                  {{ candidate.contractType }}
-                </span>
+          @for (candidate of candidates; track candidate) {
+            <mat-radio-button
+              [value]="candidate.id"
+              class="candidate-option">
+              <div class="candidate-info">
+                <strong>{{ candidate.firstName }} {{ candidate.lastName }}</strong>
+                <div class="candidate-details">
+                  <span class="detail-item">
+                    <mat-icon class="small-icon">work</mat-icon>
+                    {{ candidate.applicationCount || 0 }} applications
+                  </span>
+                  <span class="detail-item">
+                    <mat-icon class="small-icon">comment</mat-icon>
+                    {{ candidate.reviewCount || 0 }} reviews
+                  </span>
+                  @if (candidate.contractType) {
+                    <span class="detail-item">
+                      <mat-icon class="small-icon">badge</mat-icon>
+                      {{ candidate.contractType }}
+                    </span>
+                  }
+                </div>
               </div>
-            </div>
-          </mat-radio-button>
+            </mat-radio-button>
+          }
         </mat-radio-group>
-
+    
         <mat-divider></mat-divider>
-
+    
         <h3>Merged Global Notes:</h3>
         <p class="help-text">
-          All global notes from the selected candidates will be combined. 
+          All global notes from the selected candidates will be combined.
           You can edit the combined text below:
         </p>
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Combined Global Notes</mat-label>
-          <textarea 
-            matInput 
-            [(ngModel)]="mergedNotes" 
+          <textarea
+            matInput
+            [(ngModel)]="mergedNotes"
             rows="8"
             placeholder="Global notes from all candidates will appear here...">
           </textarea>
         </mat-form-field>
-
+    
         <div class="warning-section">
           <mat-icon class="warning-icon">warning</mat-icon>
           <p>
-            <strong>Warning:</strong> This action cannot be undone. 
+            <strong>Warning:</strong> This action cannot be undone.
             The non-selected candidates will be permanently deleted after their applications are transferred.
           </p>
         </div>
@@ -97,13 +99,13 @@ import { Candidate } from '../../models/candidate.model';
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-button (click)="onCancel()">Cancel</button>
-      <button mat-raised-button color="primary" (click)="onMerge()" 
-              [disabled]="!selectedCandidateId">
+      <button mat-raised-button color="primary" (click)="onMerge()"
+        [disabled]="!selectedCandidateId">
         <mat-icon>merge</mat-icon>
         Merge Candidates
       </button>
     </mat-dialog-actions>
-  `,
+    `,
     styles: [`
     .merge-container {
       min-width: 550px;

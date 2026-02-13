@@ -35,7 +35,7 @@ interface DuplicatePair {
           <mat-icon>{{ data.similarityScore >= 0.95 ? 'warning' : 'info' }}</mat-icon>
           <span>{{ getSimilarityPercentage() }}% Similar</span>
         </div>
-
+    
         <div class="comparison-grid">
           <!-- Candidate 1 -->
           <mat-card class="candidate-card">
@@ -63,24 +63,28 @@ interface DuplicatePair {
                   <strong>Reviews:</strong>
                   <span>{{ data.candidate1.reviewCount || 0 }}</span>
                 </div>
-                <div class="info-item" *ngIf="data.candidate1.averageRating">
-                  <strong>Average Rating:</strong>
-                  <span>{{ data.candidate1.averageRating | number:'1.1-1' }}/5</span>
-                </div>
-                <div class="info-item" *ngIf="data.candidate1.globalNotes">
-                  <strong>Notes:</strong>
-                  <span class="notes">{{ data.candidate1.globalNotes }}</span>
-                </div>
+                @if (data.candidate1.averageRating) {
+                  <div class="info-item">
+                    <strong>Average Rating:</strong>
+                    <span>{{ data.candidate1.averageRating | number:'1.1-1' }}/5</span>
+                  </div>
+                }
+                @if (data.candidate1.globalNotes) {
+                  <div class="info-item">
+                    <strong>Notes:</strong>
+                    <span class="notes">{{ data.candidate1.globalNotes }}</span>
+                  </div>
+                }
               </div>
             </mat-card-content>
           </mat-card>
-
+    
           <!-- VS Divider -->
           <div class="vs-divider">
             <mat-icon>compare_arrows</mat-icon>
             <span>VS</span>
           </div>
-
+    
           <!-- Candidate 2 -->
           <mat-card class="candidate-card">
             <mat-card-header>
@@ -107,19 +111,23 @@ interface DuplicatePair {
                   <strong>Reviews:</strong>
                   <span>{{ data.candidate2.reviewCount || 0 }}</span>
                 </div>
-                <div class="info-item" *ngIf="data.candidate2.averageRating">
-                  <strong>Average Rating:</strong>
-                  <span>{{ data.candidate2.averageRating | number:'1.1-1' }}/5</span>
-                </div>
-                <div class="info-item" *ngIf="data.candidate2.globalNotes">
-                  <strong>Notes:</strong>
-                  <span class="notes">{{ data.candidate2.globalNotes }}</span>
-                </div>
+                @if (data.candidate2.averageRating) {
+                  <div class="info-item">
+                    <strong>Average Rating:</strong>
+                    <span>{{ data.candidate2.averageRating | number:'1.1-1' }}/5</span>
+                  </div>
+                }
+                @if (data.candidate2.globalNotes) {
+                  <div class="info-item">
+                    <strong>Notes:</strong>
+                    <span class="notes">{{ data.candidate2.globalNotes }}</span>
+                  </div>
+                }
               </div>
             </mat-card-content>
           </mat-card>
         </div>
-
+    
         <div class="action-section">
           <p class="merge-info">
             <mat-icon>info</mat-icon>
@@ -135,7 +143,7 @@ interface DuplicatePair {
     <mat-dialog-actions align="end">
       <button mat-button (click)="onClose()">Close</button>
     </mat-dialog-actions>
-  `,
+    `,
     styles: [`
     .comparison-container {
       min-width: 800px;

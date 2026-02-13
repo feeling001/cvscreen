@@ -2,84 +2,91 @@
   <div class="header">
     <h2>Candidates</h2>
     <div class="header-actions">
-      <button 
-        mat-raised-button 
+      <button
+        mat-raised-button
         color="warn"
         (click)="detectDuplicates()"
         [disabled]="detectingDuplicates"
         matTooltip="Detect potential duplicate candidates">
-        <mat-spinner *ngIf="detectingDuplicates" diameter="20" style="display: inline-block; margin-right: 8px;"></mat-spinner>
-        <mat-icon *ngIf="!detectingDuplicates">search</mat-icon>
+        @if (detectingDuplicates) {
+          <mat-spinner diameter="20" style="display: inline-block; margin-right: 8px;"></mat-spinner>
+        }
+        @if (!detectingDuplicates) {
+          <mat-icon>search</mat-icon>
+        }
         {{ detectingDuplicates ? 'Detecting...' : 'Detect Duplicates' }}
       </button>
-      <button 
-        mat-raised-button 
-        color="accent" 
-        (click)="openMergeDialog()"
-        [disabled]="selectedCandidateIds.size < 2"
-        *ngIf="selectedCandidateIds.size > 0">
-        <mat-icon>merge</mat-icon>
-        Merge {{ selectedCandidateIds.size }} Candidates
-      </button>
+      @if (selectedCandidateIds.size > 0) {
+        <button
+          mat-raised-button
+          color="accent"
+          (click)="openMergeDialog()"
+          [disabled]="selectedCandidateIds.size < 2"
+          >
+          <mat-icon>merge</mat-icon>
+          Merge {{ selectedCandidateIds.size }} Candidates
+        </button>
+      }
       <button mat-raised-button color="primary" (click)="openCreateDialog()">
         <mat-icon>add</mat-icon>
         New Candidate
       </button>
     </div>
   </div>
-  
+
   <!-- Duplicates Detection Panel -->
-  <div class="duplicates-panel" *ngIf="duplicates.length > 0">
-    <mat-expansion-panel class="duplicates-expansion" [expanded]="true">
-      <mat-expansion-panel-header>
-        <mat-panel-title>
-          <mat-icon class="warning-icon">warning</mat-icon>
-          <span>Potential Duplicates Found ({{ duplicates.length }})</span>
-        </mat-panel-title>
-      </mat-expansion-panel-header>
-
-      <div class="duplicates-content">
-        <p class="duplicates-info">
-          <mat-icon>info</mat-icon>
-          These candidates have similar names. Review them to determine if they should be merged.
-        </p>
-
-        <div class="duplicates-list">
-          <mat-card *ngFor="let duplicate of duplicates" class="duplicate-card">
-            <mat-card-content>
-              <div class="duplicate-header">
-                <div class="duplicate-names">
-                  <div class="candidate-name">
-                    <mat-icon>person</mat-icon>
-                    <strong>{{ duplicate.candidate1.firstName }} {{ duplicate.candidate1.lastName }}</strong>
+  @if (duplicates.length > 0) {
+    <div class="duplicates-panel">
+      <mat-expansion-panel class="duplicates-expansion" [expanded]="true">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            <mat-icon class="warning-icon">warning</mat-icon>
+            <span>Potential Duplicates Found ({{ duplicates.length }})</span>
+          </mat-panel-title>
+        </mat-expansion-panel-header>
+        <div class="duplicates-content">
+          <p class="duplicates-info">
+            <mat-icon>info</mat-icon>
+            These candidates have similar names. Review them to determine if they should be merged.
+          </p>
+          <div class="duplicates-list">
+            @for (duplicate of duplicates; track duplicate) {
+              <mat-card class="duplicate-card">
+                <mat-card-content>
+                  <div class="duplicate-header">
+                    <div class="duplicate-names">
+                      <div class="candidate-name">
+                        <mat-icon>person</mat-icon>
+                        <strong>{{ duplicate.candidate1.firstName }} {{ duplicate.candidate1.lastName }}</strong>
+                      </div>
+                      <mat-icon class="vs-icon">compare_arrows</mat-icon>
+                      <div class="candidate-name">
+                        <mat-icon>person</mat-icon>
+                        <strong>{{ duplicate.candidate2.firstName }} {{ duplicate.candidate2.lastName }}</strong>
+                      </div>
+                    </div>
+                    <mat-chip
+                      class="similarity-chip"
+                      [class.high-similarity]="getSimilarityPercentage(duplicate) >= 95"
+                      [class.medium-similarity]="getSimilarityPercentage(duplicate) >= 85 && getSimilarityPercentage(duplicate) < 95">
+                      {{ getSimilarityPercentage(duplicate) }}% Similar
+                    </mat-chip>
                   </div>
-                  <mat-icon class="vs-icon">compare_arrows</mat-icon>
-                  <div class="candidate-name">
-                    <mat-icon>person</mat-icon>
-                    <strong>{{ duplicate.candidate2.firstName }} {{ duplicate.candidate2.lastName }}</strong>
+                  <div class="duplicate-actions">
+                    <button mat-raised-button color="primary" (click)="compareDuplicates(duplicate)">
+                      <mat-icon>visibility</mat-icon>
+                      Compare Details
+                    </button>
                   </div>
-                </div>
-                <mat-chip 
-                  class="similarity-chip"
-                  [class.high-similarity]="getSimilarityPercentage(duplicate) >= 95"
-                  [class.medium-similarity]="getSimilarityPercentage(duplicate) >= 85 && getSimilarityPercentage(duplicate) < 95">
-                  {{ getSimilarityPercentage(duplicate) }}% Similar
-                </mat-chip>
-              </div>
-
-              <div class="duplicate-actions">
-                <button mat-raised-button color="primary" (click)="compareDuplicates(duplicate)">
-                  <mat-icon>visibility</mat-icon>
-                  Compare Details
-                </button>
-              </div>
-            </mat-card-content>
-          </mat-card>
+                </mat-card-content>
+              </mat-card>
+            }
+          </div>
         </div>
-      </div>
-    </mat-expansion-panel>
-  </div>
-  
+      </mat-expansion-panel>
+    </div>
+  }
+
   <div class="search-bar">
     <mat-form-field appearance="outline">
       <mat-label>Search candidates</mat-label>
@@ -89,13 +96,15 @@
       <mat-icon>search</mat-icon>
       Search
     </button>
-    <button 
-      mat-button 
-      (click)="clearSelection()" 
-      *ngIf="selectedCandidateIds.size > 0">
-      <mat-icon>clear</mat-icon>
-      Clear Selection
-    </button>
+    @if (selectedCandidateIds.size > 0) {
+      <button
+        mat-button
+        (click)="clearSelection()"
+        >
+        <mat-icon>clear</mat-icon>
+        Clear Selection
+      </button>
+    }
   </div>
 
   <table mat-table [dataSource]="candidates" class="mat-elevation-z8" matSort (matSortChange)="onSortChange($event)">
@@ -111,7 +120,7 @@
         </mat-checkbox>
       </td>
     </ng-container>
-    
+
     <ng-container matColumnDef="firstName">
       <th mat-header-cell *matHeaderCellDef mat-sort-header>First Name</th>
       <td mat-cell *matCellDef="let candidate">{{ candidate.firstName }}</td>
@@ -125,43 +134,52 @@
     <ng-container matColumnDef="contractType">
       <th mat-header-cell *matHeaderCellDef mat-sort-header>Contract Type</th>
       <td mat-cell *matCellDef="let candidate">
-        <mat-chip *ngIf="candidate.contractType" class="contract-chip">
-          {{ candidate.contractType }}
-        </mat-chip>
-        <span *ngIf="!candidate.contractType" class="not-specified">-</span>
+        @if (candidate.contractType) {
+          <mat-chip class="contract-chip">
+            {{ candidate.contractType }}
+          </mat-chip>
+        }
+        @if (!candidate.contractType) {
+          <span class="not-specified">-</span>
+        }
       </td>
     </ng-container>
 
     <ng-container matColumnDef="applicationCount">
       <th mat-header-cell *matHeaderCellDef mat-sort-header>Applications</th>
       <td mat-cell *matCellDef="let candidate">
-        <a class="link" (click)="navigateToApplications(candidate.fullName, $event)" 
-           matTooltip="View applications for this candidate">
+        <a class="link" (click)="navigateToApplications(candidate.fullName, $event)"
+          matTooltip="View applications for this candidate">
           {{ candidate.applicationCount || 0 }}
         </a>
       </td>
     </ng-container>
-    
+
     <ng-container matColumnDef="reviewCount">
       <th mat-header-cell *matHeaderCellDef mat-sort-header>Reviews</th>
       <td mat-cell *matCellDef="let candidate">{{ candidate.reviewCount || 0 }}</td>
     </ng-container>
-    
+
     <ng-container matColumnDef="averageRating">
       <th mat-header-cell *matHeaderCellDef mat-sort-header>Avg Rating</th>
       <td mat-cell *matCellDef="let candidate">
-        <div class="rating-display" *ngIf="candidate.averageRating && candidate.averageRating > 0">
-          <mat-icon 
-            *ngFor="let star of getStarArray(candidate.averageRating!)" 
-            [class.filled]="star <= candidate.averageRating!"
-            [class.half-filled]="star > candidate.averageRating! && star - 0.5 <= candidate.averageRating!"
-            class="rating-star"
-            matTooltip="Average rating: {{ candidate.averageRating | number:'1.1-1' }}/5">
-            {{ star <= candidate.averageRating! ? 'star' : (star - 0.5 <= candidate.averageRating! ? 'star_half' : 'star_border') }}
-          </mat-icon>
-          <span class="rating-value">{{ candidate.averageRating | number:'1.1-1' }}</span>
-        </div>
-        <span *ngIf="!candidate.averageRating || candidate.averageRating === 0" class="no-rating">-</span>
+        @if (candidate.averageRating && candidate.averageRating > 0) {
+          <div class="rating-display">
+            @for (star of getStarArray(candidate.averageRating!); track star) {
+              <mat-icon
+                [class.filled]="star <= candidate.averageRating!"
+                [class.half-filled]="star > candidate.averageRating! && star - 0.5 <= candidate.averageRating!"
+                class="rating-star"
+                matTooltip="Average rating: {{ candidate.averageRating | number:'1.1-1' }}/5">
+                {{ star <= candidate.averageRating! ? 'star' : (star - 0.5 <= candidate.averageRating! ? 'star_half' : 'star_border') }}
+              </mat-icon>
+            }
+            <span class="rating-value">{{ candidate.averageRating | number:'1.1-1' }}</span>
+          </div>
+        }
+        @if (!candidate.averageRating || candidate.averageRating === 0) {
+          <span class="no-rating">-</span>
+        }
       </td>
     </ng-container>
 
@@ -169,15 +187,15 @@
       <th mat-header-cell *matHeaderCellDef>Actions</th>
       <td mat-cell *matCellDef="let candidate">
         <button mat-icon-button color="accent" (click)="viewCandidateDetails(candidate.id!)"
-                matTooltip="View Details">
+          matTooltip="View Details">
           <mat-icon>visibility</mat-icon>
         </button>
-        <button mat-icon-button color="primary" (click)="openEditDialog(candidate)" 
-                matTooltip="Edit">
+        <button mat-icon-button color="primary" (click)="openEditDialog(candidate)"
+          matTooltip="Edit">
           <mat-icon>edit</mat-icon>
         </button>
         <button mat-icon-button color="warn" (click)="deleteCandidate(candidate.id!)"
-                matTooltip="Delete">
+          matTooltip="Delete">
           <mat-icon>delete</mat-icon>
         </button>
       </td>
@@ -186,9 +204,9 @@
     <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
     <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
   </table>
-  
+
   <!-- Pagination -->
-  <mat-paginator 
+  <mat-paginator
     [length]="totalItems"
     [pageSize]="pageSize"
     [pageSizeOptions]="pageSizeOptions"
@@ -198,66 +216,75 @@
   </mat-paginator>
 
   <!-- Candidate Details Section -->
-  <div id="candidate-details" *ngIf="selectedCandidate" class="details-section">
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title>
-          <div class="details-header">
-            <div>
-              <mat-icon>person</mat-icon>
-              {{ selectedCandidate.firstName }} {{ selectedCandidate.lastName }}
-              <mat-chip *ngIf="selectedCandidate.contractType" class="contract-chip-header">
+  @if (selectedCandidate) {
+    <div id="candidate-details" class="details-section">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>
+            <div class="details-header">
+              <div>
+                <mat-icon>person</mat-icon>
+                {{ selectedCandidate.firstName }} {{ selectedCandidate.lastName }}
+                @if (selectedCandidate.contractType) {
+                  <mat-chip class="contract-chip-header">
+                    {{ selectedCandidate.contractType }}
+                  </mat-chip>
+                }
+              </div>
+              <button mat-icon-button (click)="closeDetails()" matTooltip="Close">
+                <mat-icon>close</mat-icon>
+              </button>
+            </div>
+          </mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div class="detail-section">
+            <h3>General Information</h3>
+            <p><strong>Full Name:</strong> {{ selectedCandidate.fullName }}</p>
+            <p><strong>Contract Type:</strong>
+            @if (selectedCandidate.contractType) {
+              <mat-chip class="contract-chip">
                 {{ selectedCandidate.contractType }}
               </mat-chip>
-            </div>
-            <button mat-icon-button (click)="closeDetails()" matTooltip="Close">
-              <mat-icon>close</mat-icon>
-            </button>
-          </div>
-        </mat-card-title>
-      </mat-card-header>
-
-      <mat-card-content>
-        <div class="detail-section">
-          <h3>General Information</h3>
-          <p><strong>Full Name:</strong> {{ selectedCandidate.fullName }}</p>
-          <p><strong>Contract Type:</strong> 
-            <mat-chip *ngIf="selectedCandidate.contractType" class="contract-chip">
-              {{ selectedCandidate.contractType }}
-            </mat-chip>
-            <span *ngIf="!selectedCandidate.contractType">Not specified</span>
+            }
+            @if (!selectedCandidate.contractType) {
+              <span>Not specified</span>
+            }
           </p>
-          <p><strong>Total Applications:</strong> 
-            <a class="link" (click)="navigateToApplications(selectedCandidate.fullName!, $event)">
-              {{ selectedCandidate.applicationCount || 0 }}
-            </a>
-          </p>
-          <p><strong>Total Reviews:</strong> {{ selectedCandidate.reviewCount || 0 }}</p>
-          <p *ngIf="selectedCandidate.averageRating && selectedCandidate.averageRating > 0">
-            <strong>Average Rating:</strong> 
+          <p><strong>Total Applications:</strong>
+          <a class="link" (click)="navigateToApplications(selectedCandidate.fullName!, $event)">
+            {{ selectedCandidate.applicationCount || 0 }}
+          </a>
+        </p>
+        <p><strong>Total Reviews:</strong> {{ selectedCandidate.reviewCount || 0 }}</p>
+        @if (selectedCandidate.averageRating && selectedCandidate.averageRating > 0) {
+          <p>
+            <strong>Average Rating:</strong>
             <span class="inline-rating">
-              <mat-icon 
-                *ngFor="let star of getStarArray(selectedCandidate.averageRating!)" 
-                [class.filled]="star <= selectedCandidate.averageRating!"
-                [class.half-filled]="star > selectedCandidate.averageRating! && star - 0.5 <= selectedCandidate.averageRating!"
-                class="rating-star">
-                {{ star <= selectedCandidate.averageRating! ? 'star' : (star - 0.5 <= selectedCandidate.averageRating! ? 'star_half' : 'star_border') }}
-              </mat-icon>
+              @for (star of getStarArray(selectedCandidate.averageRating!); track star) {
+                <mat-icon
+                  [class.filled]="star <= selectedCandidate.averageRating!"
+                  [class.half-filled]="star > selectedCandidate.averageRating! && star - 0.5 <= selectedCandidate.averageRating!"
+                  class="rating-star">
+                  {{ star <= selectedCandidate.averageRating! ? 'star' : (star - 0.5 <= selectedCandidate.averageRating! ? 'star_half' : 'star_border') }}
+                </mat-icon>
+              }
               {{ selectedCandidate.averageRating | number:'1.1-1' }}/5
             </span>
           </p>
-          <p *ngIf="selectedCandidate.globalNotes">
+        }
+        @if (selectedCandidate.globalNotes) {
+          <p>
             <strong>Global Notes:</strong><br>
             <span class="global-notes">{{ selectedCandidate.globalNotes }}</span>
           </p>
-        </div>
-
-        <mat-divider></mat-divider>
-
-        <!-- All Comments Section -->
-        <div class="detail-section" *ngIf="selectedCandidate.allComments && selectedCandidate.allComments.length > 0">
+        }
+      </div>
+      <mat-divider></mat-divider>
+      <!-- All Comments Section -->
+      @if (selectedCandidate.allComments && selectedCandidate.allComments.length > 0) {
+        <div class="detail-section">
           <h3>All Comments ({{ selectedCandidate.allComments.length }})</h3>
-          
           <table mat-table [dataSource]="selectedCandidate.allComments" class="comments-table">
             <ng-container matColumnDef="user">
               <th mat-header-cell *matHeaderCellDef>User</th>
@@ -265,99 +292,102 @@
                 <strong>{{ comment.displayName || comment.username }}</strong>
               </td>
             </ng-container>
-
             <ng-container matColumnDef="rating">
               <th mat-header-cell *matHeaderCellDef>Rating</th>
               <td mat-cell *matCellDef="let comment">
-                <div class="rating-display-small" *ngIf="comment.rating">
-                  <mat-icon 
-                    *ngFor="let star of getStarArray(comment.rating!)" 
-                    [class.filled]="star <= comment.rating!"
-                    class="rating-star-small">
-                    {{ star <= comment.rating! ? 'star' : 'star_border' }}
-                  </mat-icon>
-                </div>
-                <span *ngIf="!comment.rating">-</span>
+                @if (comment.rating) {
+                  <div class="rating-display-small">
+                    @for (star of getStarArray(comment.rating!); track star) {
+                      <mat-icon
+                        [class.filled]="star <= comment.rating!"
+                        class="rating-star-small">
+                        {{ star <= comment.rating! ? 'star' : 'star_border' }}
+                      </mat-icon>
+                    }
+                  </div>
+                }
+                @if (!comment.rating) {
+                  <span>-</span>
+                }
               </td>
             </ng-container>
-
             <ng-container matColumnDef="comment">
               <th mat-header-cell *matHeaderCellDef>Comment</th>
               <td mat-cell *matCellDef="let comment">
                 <div class="comment-text">{{ comment.comment }}</div>
               </td>
             </ng-container>
-
             <ng-container matColumnDef="context">
               <th mat-header-cell *matHeaderCellDef>Context</th>
               <td mat-cell *matCellDef="let comment">
-                <mat-chip *ngIf="comment.jobReference" class="context-chip">
-                  {{ comment.jobReference }}
-                </mat-chip>
-                <span *ngIf="!comment.jobReference" class="spontaneous-chip">Spontaneous</span>
+                @if (comment.jobReference) {
+                  <mat-chip class="context-chip">
+                    {{ comment.jobReference }}
+                  </mat-chip>
+                }
+                @if (!comment.jobReference) {
+                  <span class="spontaneous-chip">Spontaneous</span>
+                }
                 <br>
-                <small>{{ comment.roleCategory }}</small>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="date">
-              <th mat-header-cell *matHeaderCellDef>Date</th>
-              <td mat-cell *matCellDef="let comment">
-                {{ comment.createdAt | date:'dd/MM/yyyy HH:mm' }}
-              </td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="commentColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: commentColumns;"></tr>
-          </table>
-        </div>
-
-        <mat-divider *ngIf="selectedCandidate.applications && selectedCandidate.applications.length > 0"></mat-divider>
-
-        <div class="detail-section" *ngIf="selectedCandidate.applications && selectedCandidate.applications.length > 0">
-          <h3>Application History ({{ selectedCandidate.applications.length }})</h3>
-          
-          <table mat-table [dataSource]="selectedCandidate.applications" class="applications-table">
-            <ng-container matColumnDef="jobReference">
-              <th mat-header-cell *matHeaderCellDef>Job Reference</th>
-              <td mat-cell *matCellDef="let app">
-                {{ app.jobReference || 'Spontaneous' }}
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="roleCategory">
-              <th mat-header-cell *matHeaderCellDef>Role</th>
-              <td mat-cell *matCellDef="let app">{{ app.roleCategory }}</td>
-            </ng-container>
-
-            <ng-container matColumnDef="companyName">
-              <th mat-header-cell *matHeaderCellDef>Company</th>
-              <td mat-cell *matCellDef="let app">{{ app.companyName || '-' }}</td>
-            </ng-container>
-
-            <ng-container matColumnDef="status">
-              <th mat-header-cell *matHeaderCellDef>Status</th>
-              <td mat-cell *matCellDef="let app">
-                <span class="status-badge" [class.approved]="app.status === 'APPROVED_FOR_MISSION'">
-                  {{ getStatusLabel(app.status) }}
-                </span>
-              </td>
-            </ng-container>
-
-            <ng-container matColumnDef="applicationDate">
-              <th mat-header-cell *matHeaderCellDef>Date</th>
-              <td mat-cell *matCellDef="let app">{{ app.applicationDate | date:'dd/MM/yyyy' }}</td>
-            </ng-container>
-
-            <tr mat-header-row *matHeaderRowDef="applicationColumns"></tr>
-            <tr mat-row *matRowDef="let row; columns: applicationColumns;"></tr>
-          </table>
-        </div>
-
-        <div class="detail-section" *ngIf="!selectedCandidate.applications || selectedCandidate.applications.length === 0">
-          <p class="no-data">No applications found for this candidate.</p>
-        </div>
+                  <small>{{ comment.roleCategory }}</small>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="date">
+                <th mat-header-cell *matHeaderCellDef>Date</th>
+                <td mat-cell *matCellDef="let comment">
+                  {{ comment.createdAt | date:'dd/MM/yyyy HH:mm' }}
+                </td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="commentColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: commentColumns;"></tr>
+            </table>
+          </div>
+        }
+        @if (selectedCandidate.applications && selectedCandidate.applications.length > 0) {
+          <mat-divider></mat-divider>
+        }
+        @if (selectedCandidate.applications && selectedCandidate.applications.length > 0) {
+          <div class="detail-section">
+            <h3>Application History ({{ selectedCandidate.applications.length }})</h3>
+            <table mat-table [dataSource]="selectedCandidate.applications" class="applications-table">
+              <ng-container matColumnDef="jobReference">
+                <th mat-header-cell *matHeaderCellDef>Job Reference</th>
+                <td mat-cell *matCellDef="let app">
+                  {{ app.jobReference || 'Spontaneous' }}
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="roleCategory">
+                <th mat-header-cell *matHeaderCellDef>Role</th>
+                <td mat-cell *matCellDef="let app">{{ app.roleCategory }}</td>
+              </ng-container>
+              <ng-container matColumnDef="companyName">
+                <th mat-header-cell *matHeaderCellDef>Company</th>
+                <td mat-cell *matCellDef="let app">{{ app.companyName || '-' }}</td>
+              </ng-container>
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let app">
+                  <span class="status-badge" [class.approved]="app.status === 'APPROVED_FOR_MISSION'">
+                    {{ getStatusLabel(app.status) }}
+                  </span>
+                </td>
+              </ng-container>
+              <ng-container matColumnDef="applicationDate">
+                <th mat-header-cell *matHeaderCellDef>Date</th>
+                <td mat-cell *matCellDef="let app">{{ app.applicationDate | date:'dd/MM/yyyy' }}</td>
+              </ng-container>
+              <tr mat-header-row *matHeaderRowDef="applicationColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: applicationColumns;"></tr>
+            </table>
+          </div>
+        }
+        @if (!selectedCandidate.applications || selectedCandidate.applications.length === 0) {
+          <div class="detail-section">
+            <p class="no-data">No applications found for this candidate.</p>
+          </div>
+        }
       </mat-card-content>
     </mat-card>
   </div>
+}
 </div>

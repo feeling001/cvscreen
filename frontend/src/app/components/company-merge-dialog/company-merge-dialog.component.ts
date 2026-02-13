@@ -1,5 +1,5 @@
 import { Component, Inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -14,17 +14,16 @@ import { Company } from '../../models/company.model';
 @Component({
     selector: 'app-company-merge-dialog',
     imports: [
-        CommonModule,
-        FormsModule,
-        MatDialogModule,
-        MatFormFieldModule,
-        MatInputModule,
-        MatButtonModule,
-        MatRadioModule,
-        MatIconModule,
-        MatListModule,
-        MatDividerModule
-    ],
+    FormsModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatRadioModule,
+    MatIconModule,
+    MatListModule,
+    MatDividerModule
+],
     template: `
     <h2 mat-dialog-title>
       <mat-icon>merge</mat-icon>
@@ -35,57 +34,60 @@ import { Company } from '../../models/company.model';
         <div class="info-section">
           <mat-icon class="info-icon">info</mat-icon>
           <p>
-            You are about to merge {{ companies.length }} companies. 
-            Select which company to keep as the primary one. 
+            You are about to merge {{ companies.length }} companies.
+            Select which company to keep as the primary one.
             All applications from the other companies will be transferred to the selected company.
           </p>
         </div>
-
+    
         <mat-divider></mat-divider>
-
+    
         <h3>Select Primary Company:</h3>
         <mat-radio-group [(ngModel)]="selectedCompanyId" class="company-list">
-          <mat-radio-button 
-            *ngFor="let company of companies" 
-            [value]="company.id"
-            class="company-option">
-            <div class="company-info">
-              <strong>{{ company.name }}</strong>
-              <div class="company-details">
-                <span class="detail-item">
-                  <mat-icon class="small-icon">work</mat-icon>
-                  {{ company.applicationCount || 0 }} applications
-                </span>
-                <span class="detail-item" *ngIf="company.notes">
-                  <mat-icon class="small-icon">note</mat-icon>
-                  Has notes
-                </span>
+          @for (company of companies; track company) {
+            <mat-radio-button
+              [value]="company.id"
+              class="company-option">
+              <div class="company-info">
+                <strong>{{ company.name }}</strong>
+                <div class="company-details">
+                  <span class="detail-item">
+                    <mat-icon class="small-icon">work</mat-icon>
+                    {{ company.applicationCount || 0 }} applications
+                  </span>
+                  @if (company.notes) {
+                    <span class="detail-item">
+                      <mat-icon class="small-icon">note</mat-icon>
+                      Has notes
+                    </span>
+                  }
+                </div>
               </div>
-            </div>
-          </mat-radio-button>
+            </mat-radio-button>
+          }
         </mat-radio-group>
-
+    
         <mat-divider></mat-divider>
-
+    
         <h3>Merged Notes:</h3>
         <p class="help-text">
-          All notes from the selected companies will be combined. 
+          All notes from the selected companies will be combined.
           You can edit the combined text below:
         </p>
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Combined Notes</mat-label>
-          <textarea 
-            matInput 
-            [(ngModel)]="mergedNotes" 
+          <textarea
+            matInput
+            [(ngModel)]="mergedNotes"
             rows="8"
             placeholder="Notes from all companies will appear here...">
           </textarea>
         </mat-form-field>
-
+    
         <div class="warning-section">
           <mat-icon class="warning-icon">warning</mat-icon>
           <p>
-            <strong>Warning:</strong> This action cannot be undone. 
+            <strong>Warning:</strong> This action cannot be undone.
             The non-selected companies will be permanently deleted after their applications are transferred.
           </p>
         </div>
@@ -93,13 +95,13 @@ import { Company } from '../../models/company.model';
     </mat-dialog-content>
     <mat-dialog-actions align="end">
       <button mat-button (click)="onCancel()">Cancel</button>
-      <button mat-raised-button color="primary" (click)="onMerge()" 
-              [disabled]="!selectedCompanyId">
+      <button mat-raised-button color="primary" (click)="onMerge()"
+        [disabled]="!selectedCompanyId">
         <mat-icon>merge</mat-icon>
         Merge Companies
       </button>
     </mat-dialog-actions>
-  `,
+    `,
     styles: [`
     .merge-container {
       min-width: 550px;

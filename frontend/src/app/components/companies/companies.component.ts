@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { MatTableModule } from '@angular/material/table';
@@ -21,20 +21,19 @@ import { CompanyMergeDialogComponent } from '../company-merge-dialog/company-mer
 @Component({
     selector: 'app-companies',
     imports: [
-        CommonModule,
-        FormsModule,
-        MatTableModule,
-        MatButtonModule,
-        MatFormFieldModule,
-        MatInputModule,
-        MatIconModule,
-        MatSnackBarModule,
-        MatDialogModule,
-        MatTooltipModule,
-        MatCheckboxModule,
-        MatPaginatorModule,
-        MatSortModule
-    ],
+    FormsModule,
+    MatTableModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatIconModule,
+    MatSnackBarModule,
+    MatDialogModule,
+    MatTooltipModule,
+    MatCheckboxModule,
+    MatPaginatorModule,
+    MatSortModule
+],
     templateUrl: './companies.component.html',
     styleUrls: ['./companies.component.css']
 })

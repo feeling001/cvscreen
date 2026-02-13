@@ -1,9 +1,9 @@
 <div class="container">
   <div class="header">
     <h2>User Management</h2>
-    <button 
-      mat-raised-button 
-      color="primary" 
+    <button
+      mat-raised-button
+      color="primary"
       (click)="openCreateDialog()"
       [disabled]="!isAdmin"
       [matTooltip]="!isAdmin ? 'Only admin can create users' : 'Create new user'">
@@ -17,8 +17,12 @@
       <th mat-header-cell *matHeaderCellDef>Username</th>
       <td mat-cell *matCellDef="let user">
         <strong>{{ user.username }}</strong>
-        <mat-chip *ngIf="user.username === 'admin'" class="admin-chip">Admin</mat-chip>
-        <mat-chip *ngIf="user.id === currentUser?.id" class="current-chip">You</mat-chip>
+        @if (user.username === 'admin') {
+          <mat-chip class="admin-chip">Admin</mat-chip>
+        }
+        @if (user.id === currentUser?.id) {
+          <mat-chip class="current-chip">You</mat-chip>
+        }
       </td>
     </ng-container>
 
@@ -49,17 +53,17 @@
     <ng-container matColumnDef="actions">
       <th mat-header-cell *matHeaderCellDef>Actions</th>
       <td mat-cell *matCellDef="let user">
-        <button 
-          mat-icon-button 
-          color="primary" 
+        <button
+          mat-icon-button
+          color="primary"
           (click)="openEditDialog(user)"
           [disabled]="!canEdit(user)"
           [matTooltip]="canEdit(user) ? 'Edit user' : 'You can only edit your own profile'">
           <mat-icon>edit</mat-icon>
         </button>
-        <button 
-          mat-icon-button 
-          color="warn" 
+        <button
+          mat-icon-button
+          color="warn"
           (click)="deleteUser(user.id!, user.username)"
           [disabled]="!canDelete(user)"
           [matTooltip]="canDelete(user) ? 'Delete user' : (user.username === 'admin' ? 'Cannot delete admin' : 'Only admin can delete users')">
@@ -75,8 +79,12 @@
   <div class="info-panel">
     <mat-icon>info</mat-icon>
     <div>
-      <p *ngIf="isAdmin"><strong>Admin privileges:</strong> You can create, edit, and delete all users.</p>
-      <p *ngIf="!isAdmin"><strong>User privileges:</strong> You can only edit your own profile (display name and password).</p>
+      @if (isAdmin) {
+        <p><strong>Admin privileges:</strong> You can create, edit, and delete all users.</p>
+      }
+      @if (!isAdmin) {
+        <p><strong>User privileges:</strong> You can only edit your own profile (display name and password).</p>
+      }
       <p>The admin account cannot be deleted.</p>
     </div>
   </div>

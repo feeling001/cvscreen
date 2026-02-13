@@ -1,5 +1,5 @@
 import { Component, Inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -18,84 +18,99 @@ interface DialogData {
 @Component({
     selector: 'app-user-dialog',
     imports: [
-        CommonModule,
-        FormsModule,
-        MatDialogModule,
-        MatFormFieldModule,
-        MatInputModule,
-        MatButtonModule,
-        MatCheckboxModule,
-        MatIconModule
-    ],
+    FormsModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatIconModule
+],
     template: `
     <h2 mat-dialog-title>{{ isEditMode ? 'Edit User' : 'Create New User' }}</h2>
     <mat-dialog-content>
       <div class="form-container">
         <!-- Username (only for creation) -->
-        <mat-form-field appearance="outline" class="full-width" *ngIf="!isEditMode">
-          <mat-label>Username</mat-label>
-          <input matInput [(ngModel)]="formData.username" required
-                 placeholder="e.g. jdoe">
-          <mat-hint>Username cannot be changed after creation</mat-hint>
-        </mat-form-field>
-
-        <!-- Username (read-only for edit) -->
-        <mat-form-field appearance="outline" class="full-width" *ngIf="isEditMode">
-          <mat-label>Username</mat-label>
-          <input matInput [value]="data.user?.username" disabled>
-          <mat-hint>Username cannot be changed</mat-hint>
-        </mat-form-field>
-
-        <!-- Display Name -->
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>Display Name</mat-label>
-          <input matInput [(ngModel)]="formData.displayName" required
-                 placeholder="e.g. John Doe">
-        </mat-form-field>
-
-        <!-- Password -->
-        <mat-form-field appearance="outline" class="full-width">
-          <mat-label>{{ isEditMode ? 'New Password (leave empty to keep current)' : 'Password' }}</mat-label>
-          <input matInput type="password" [(ngModel)]="formData.password"
-                 [required]="!isEditMode"
-                 placeholder="Minimum 6 characters">
-          <mat-hint *ngIf="isEditMode">Leave empty to keep current password</mat-hint>
-          <mat-hint *ngIf="!isEditMode">Minimum 6 characters</mat-hint>
-        </mat-form-field>
-
-        <!-- Confirm Password (only for new users or when changing password) -->
-        <mat-form-field appearance="outline" class="full-width" 
-                        *ngIf="!isEditMode || formData.password">
-          <mat-label>Confirm Password</mat-label>
-          <input matInput type="password" [(ngModel)]="confirmPassword"
-                 [required]="!isEditMode || formData.password"
-                 placeholder="Re-enter password">
-          <mat-error *ngIf="confirmPassword && formData.password !== confirmPassword">
-            Passwords do not match
-          </mat-error>
-        </mat-form-field>
-
-        <!-- Enabled (only for admin) -->
-        <mat-checkbox [(ngModel)]="formData.enabled" 
-                      [disabled]="!data.isAdmin"
-                      *ngIf="isEditMode">
-          User Enabled
-        </mat-checkbox>
-
-        <div class="info-message" *ngIf="isEditMode && !data.isAdmin">
-          <mat-icon>info</mat-icon>
-          <span>As a regular user, you can only edit your display name and password.</span>
-        </div>
-      </div>
-    </mat-dialog-content>
-    <mat-dialog-actions align="end">
-      <button mat-button (click)="onCancel()">Cancel</button>
-      <button mat-raised-button color="primary" (click)="onSave()" 
-              [disabled]="!isValid()">
-        {{ isEditMode ? 'Update' : 'Create' }}
-      </button>
-    </mat-dialog-actions>
-  `,
+        @if (!isEditMode) {
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Username</mat-label>
+            <input matInput [(ngModel)]="formData.username" required
+              placeholder="e.g. jdoe">
+              <mat-hint>Username cannot be changed after creation</mat-hint>
+            </mat-form-field>
+          }
+    
+          <!-- Username (read-only for edit) -->
+          @if (isEditMode) {
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Username</mat-label>
+              <input matInput [value]="data.user?.username" disabled>
+              <mat-hint>Username cannot be changed</mat-hint>
+            </mat-form-field>
+          }
+    
+          <!-- Display Name -->
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Display Name</mat-label>
+            <input matInput [(ngModel)]="formData.displayName" required
+              placeholder="e.g. John Doe">
+            </mat-form-field>
+    
+            <!-- Password -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>{{ isEditMode ? 'New Password (leave empty to keep current)' : 'Password' }}</mat-label>
+              <input matInput type="password" [(ngModel)]="formData.password"
+                [required]="!isEditMode"
+                placeholder="Minimum 6 characters">
+                @if (isEditMode) {
+                  <mat-hint>Leave empty to keep current password</mat-hint>
+                }
+                @if (!isEditMode) {
+                  <mat-hint>Minimum 6 characters</mat-hint>
+                }
+              </mat-form-field>
+    
+              <!-- Confirm Password (only for new users or when changing password) -->
+              @if (!isEditMode || formData.password) {
+                <mat-form-field appearance="outline" class="full-width"
+                  >
+                  <mat-label>Confirm Password</mat-label>
+                  <input matInput type="password" [(ngModel)]="confirmPassword"
+                    [required]="!isEditMode || formData.password"
+                    placeholder="Re-enter password">
+                    @if (confirmPassword && formData.password !== confirmPassword) {
+                      <mat-error>
+                        Passwords do not match
+                      </mat-error>
+                    }
+                  </mat-form-field>
+                }
+    
+                <!-- Enabled (only for admin) -->
+                @if (isEditMode) {
+                  <mat-checkbox [(ngModel)]="formData.enabled"
+                    [disabled]="!data.isAdmin"
+                    >
+                    User Enabled
+                  </mat-checkbox>
+                }
+    
+                @if (isEditMode && !data.isAdmin) {
+                  <div class="info-message">
+                    <mat-icon>info</mat-icon>
+                    <span>As a regular user, you can only edit your display name and password.</span>
+                  </div>
+                }
+              </div>
+            </mat-dialog-content>
+            <mat-dialog-actions align="end">
+              <button mat-button (click)="onCancel()">Cancel</button>
+              <button mat-raised-button color="primary" (click)="onSave()"
+                [disabled]="!isValid()">
+                {{ isEditMode ? 'Update' : 'Create' }}
+              </button>
+            </mat-dialog-actions>
+    `,
     styles: [`
     .form-container {
       display: flex;

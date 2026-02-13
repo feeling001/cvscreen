@@ -39,7 +39,7 @@ import { JobDialogComponent } from '../job-dialog/job-dialog.component';
           New Job
         </button>
       </div>
-      
+    
       <div class="search-bar">
         <mat-form-field appearance="outline">
           <mat-label>Search jobs</mat-label>
@@ -50,135 +50,137 @@ import { JobDialogComponent } from '../job-dialog/job-dialog.component';
           Search
         </button>
       </div>
-
+    
       <table mat-table [dataSource]="jobs" class="mat-elevation-z8">
         <ng-container matColumnDef="reference">
           <th mat-header-cell *matHeaderCellDef>Reference</th>
           <td mat-cell *matCellDef="let job">{{ job.reference }}</td>
         </ng-container>
-
+    
         <ng-container matColumnDef="title">
           <th mat-header-cell *matHeaderCellDef>Title</th>
           <td mat-cell *matCellDef="let job">{{ job.title }}</td>
         </ng-container>
-
+    
         <ng-container matColumnDef="category">
           <th mat-header-cell *matHeaderCellDef>Category</th>
           <td mat-cell *matCellDef="let job">{{ job.category }}</td>
         </ng-container>
-
+    
         <ng-container matColumnDef="status">
           <th mat-header-cell *matHeaderCellDef>Status</th>
           <td mat-cell *matCellDef="let job">
             <mat-chip [class.status-open]="job.status === 'OPEN'"
-                      [class.status-closed]="job.status === 'CLOSED'"
-                      [class.status-hold]="job.status === 'ON_HOLD'">
+              [class.status-closed]="job.status === 'CLOSED'"
+              [class.status-hold]="job.status === 'ON_HOLD'">
               {{ job.status }}
             </mat-chip>
           </td>
         </ng-container>
-
+    
         <ng-container matColumnDef="applicationCount">
           <th mat-header-cell *matHeaderCellDef>Applications</th>
           <td mat-cell *matCellDef="let job">
-            <a class="link" 
-               (click)="navigateToApplications(job.reference)" 
-               matTooltip="View applications for this job">
+            <a class="link"
+              (click)="navigateToApplications(job.reference)"
+              matTooltip="View applications for this job">
               {{ job.applicationCount || 0 }}
             </a>
           </td>
         </ng-container>
-
+    
         <ng-container matColumnDef="actions">
           <th mat-header-cell *matHeaderCellDef>Actions</th>
           <td mat-cell *matCellDef="let job">
             <button mat-icon-button color="accent" (click)="viewJobDetails(job.id!)"
-                    matTooltip="View Details">
+              matTooltip="View Details">
               <mat-icon>visibility</mat-icon>
             </button>
             <button mat-icon-button color="primary" (click)="openEditDialog(job)"
-                    matTooltip="Edit">
+              matTooltip="Edit">
               <mat-icon>edit</mat-icon>
             </button>
             <button mat-icon-button color="warn" (click)="deleteJob(job.id!)"
-                    matTooltip="Delete">
+              matTooltip="Delete">
               <mat-icon>delete</mat-icon>
             </button>
           </td>
         </ng-container>
-
+    
         <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
         <tr mat-row *matRowDef="let row; columns: displayedColumns;"
-            [class.highlighted-row]="selectedJob?.id === row.id"></tr>
+        [class.highlighted-row]="selectedJob?.id === row.id"></tr>
       </table>
-
+    
       <!-- Job Details Section -->
-      <div id="job-details" *ngIf="selectedJob" class="details-section">
-        <mat-card>
-          <mat-card-header>
-            <mat-card-title>
-              <div class="details-header">
-                <div>
-                  <mat-icon>work</mat-icon>
-                  {{ selectedJob.reference }} - {{ selectedJob.title }}
+      @if (selectedJob) {
+        <div id="job-details" class="details-section">
+          <mat-card>
+            <mat-card-header>
+              <mat-card-title>
+                <div class="details-header">
+                  <div>
+                    <mat-icon>work</mat-icon>
+                    {{ selectedJob.reference }} - {{ selectedJob.title }}
+                  </div>
+                  <button mat-icon-button (click)="closeDetails()" matTooltip="Close">
+                    <mat-icon>close</mat-icon>
+                  </button>
                 </div>
-                <button mat-icon-button (click)="closeDetails()" matTooltip="Close">
-                  <mat-icon>close</mat-icon>
-                </button>
+              </mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="detail-section">
+                <h3>Job Information</h3>
+                <div class="info-grid">
+                  <div class="info-item">
+                    <strong>Reference:</strong>
+                    <span>{{ selectedJob.reference }}</span>
+                  </div>
+                  <div class="info-item">
+                    <strong>Title:</strong>
+                    <span>{{ selectedJob.title }}</span>
+                  </div>
+                  <div class="info-item">
+                    <strong>Category:</strong>
+                    <span>{{ selectedJob.category }}</span>
+                  </div>
+                  <div class="info-item">
+                    <strong>Status:</strong>
+                    <mat-chip [class.status-open]="selectedJob.status === 'OPEN'"
+                      [class.status-closed]="selectedJob.status === 'CLOSED'"
+                      [class.status-hold]="selectedJob.status === 'ON_HOLD'">
+                      {{ selectedJob.status }}
+                    </mat-chip>
+                  </div>
+                  <div class="info-item">
+                    <strong>Source:</strong>
+                    <span>{{ selectedJob.source || 'N/A' }}</span>
+                  </div>
+                  <div class="info-item">
+                    <strong>Publication Date:</strong>
+                    <span>{{ selectedJob.publicationDate ? (selectedJob.publicationDate | date:'dd/MM/yyyy') : 'N/A' }}</span>
+                  </div>
+                  <div class="info-item">
+                    <strong>Applications:</strong>
+                    <a class="link" (click)="navigateToApplications(selectedJob.reference)">
+                      {{ selectedJob.applicationCount || 0 }} application(s)
+                    </a>
+                  </div>
+                </div>
               </div>
-            </mat-card-title>
-          </mat-card-header>
-
-          <mat-card-content>
-            <div class="detail-section">
-              <h3>Job Information</h3>
-              <div class="info-grid">
-                <div class="info-item">
-                  <strong>Reference:</strong>
-                  <span>{{ selectedJob.reference }}</span>
+              @if (selectedJob.description) {
+                <div class="detail-section">
+                  <h3>Description</h3>
+                  <p class="description">{{ selectedJob.description }}</p>
                 </div>
-                <div class="info-item">
-                  <strong>Title:</strong>
-                  <span>{{ selectedJob.title }}</span>
-                </div>
-                <div class="info-item">
-                  <strong>Category:</strong>
-                  <span>{{ selectedJob.category }}</span>
-                </div>
-                <div class="info-item">
-                  <strong>Status:</strong>
-                  <mat-chip [class.status-open]="selectedJob.status === 'OPEN'"
-                            [class.status-closed]="selectedJob.status === 'CLOSED'"
-                            [class.status-hold]="selectedJob.status === 'ON_HOLD'">
-                    {{ selectedJob.status }}
-                  </mat-chip>
-                </div>
-                <div class="info-item">
-                  <strong>Source:</strong>
-                  <span>{{ selectedJob.source || 'N/A' }}</span>
-                </div>
-                <div class="info-item">
-                  <strong>Publication Date:</strong>
-                  <span>{{ selectedJob.publicationDate ? (selectedJob.publicationDate | date:'dd/MM/yyyy') : 'N/A' }}</span>
-                </div>
-                <div class="info-item">
-                  <strong>Applications:</strong>
-                  <a class="link" (click)="navigateToApplications(selectedJob.reference)">
-                    {{ selectedJob.applicationCount || 0 }} application(s)
-                  </a>
-                </div>
-              </div>
-            </div>
-
-            <div class="detail-section" *ngIf="selectedJob.description">
-              <h3>Description</h3>
-              <p class="description">{{ selectedJob.description }}</p>
-            </div>
-          </mat-card-content>
-        </mat-card>
-      </div>
+              }
+            </mat-card-content>
+          </mat-card>
+        </div>
+      }
     </div>
-  `,
+    `,
     styles: [`
     .container {
       padding: 20px;
