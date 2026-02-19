@@ -1,6 +1,6 @@
 {
   "name": "cvscreen-frontend",
-  "version": "0.33",
+  "version": "0.34",
   "scripts": {
     "ng": "ng",
     "start": "ng serve --port 8082",
