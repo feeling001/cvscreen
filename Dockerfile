@@ -14,7 +14,13 @@ WORKDIR /app/frontend
 COPY frontend/package*.json ./
 
 # Install dependencies
-RUN npm ci --legacy-peer-deps
+# RUN npm ci --legacy-peer-deps
+
+RUN if [ -f package-lock.json ]; then \
+        npm ci && npm cache clean --force; \
+    else \
+        npm install && npm cache clean --force; \
+    fi
 
 # Copy frontend source
 COPY frontend/ ./
