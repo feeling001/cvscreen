@@ -1,5 +1,9 @@
 <mat-toolbar color="primary">
   <span>CVScreen</span>
+  <span class="version-badge" [class]="'env-' + appInfo.environment">
+    v{{ appInfo.version }}
+    <span class="env-label">{{ appInfo.environment }}</span>
+  </span>
   <span class="spacer"></span>
   <span>{{ currentUser?.username }}</span>
   <button mat-button (click)="logout()">

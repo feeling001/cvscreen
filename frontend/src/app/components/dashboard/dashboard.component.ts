@@ -7,6 +7,7 @@ import { MatSidenavModule } from '@angular/material/sidenav';
 import { MatListModule } from '@angular/material/list';
 import { MatIconModule } from '@angular/material/icon';
 import { AuthService } from '../../services/auth.service';
+import { InfoService, AppInfo } from '../../services/info.service';
 
 @Component({
     selector: 'app-dashboard',
@@ -23,14 +24,20 @@ import { AuthService } from '../../services/auth.service';
 })
 export class DashboardComponent implements OnInit {
   currentUser: any;
+  appInfo: AppInfo = { version: '...', environment: '' };
 
   constructor(
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private infoService: InfoService
   ) {}
 
   ngOnInit(): void {
     this.currentUser = this.authService.getCurrentUser();
+    this.infoService.getInfo().subscribe({
+      next: (info) => this.appInfo = info,
+      error: () => {} // silencieux si indispo
+    });
   }
 
   logout(): void {

@@ -40,3 +40,25 @@ mat-nav-list mat-icon {
 .main-content {
   padding: 24px;
 }
+
+.version-badge {
+  margin-left: 12px;
+  font-size: 12px;
+  opacity: 0.85;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.env-label {
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 11px;
+  text-transform: uppercase;
+  background: rgba(255,255,255,0.2);
+}
+
+.env-production .env-label { background: rgba(255,50,50,0.4); }
+.env-staging    .env-label { background: rgba(255,165,0,0.4); }
+.env-default    .env-label { background: rgba(255,255,255,0.15); }
